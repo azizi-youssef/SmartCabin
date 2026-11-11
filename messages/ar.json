@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "title": "SmartClinic",
+    "title": "SmartCabin",
     "description": "تدبير العيادات والمراكز الطبية"
   },
   "common": {
-    "appName": "SmartClinic",
+    "appName": "SmartCabin",
     "close": "إغلاق",
     "cancel": "إلغاء",
     "back": "رجوع",
@@ -42,7 +42,9 @@
     "clinic": "العيادة",
     "team": "الفريق",
     "settings": "الإعدادات",
-    "doctors": "الأطباء"
+    "doctors": "الأطباء",
+    "services": "الخدمات",
+    "schedules": "مواعيد العمل"
   },
   "roles": {
     "clinic_owner": "المالك",
@@ -78,7 +80,9 @@
     "clinic_request": "قرار العيادة",
     "doctor_unavailable": "الطبيب غير متوفر",
     "duplicate": "موعد مكرر",
-    "other": "سبب آخر"
+    "other": "سبب آخر",
+    "left_before_consultation": "غادر قبل الاستشارة",
+    "not_confirmed_in_time": "لم يُؤكَّد في الوقت المحدد"
   },
   "columns": {
     "time": "الساعة",
@@ -142,7 +146,10 @@
     "INVITATION_EMAIL_MISMATCH": "أُرسلت هذه الدعوة إلى بريد إلكتروني آخر.",
     "MEMBER_NOT_ACTIVE": "هذا العضو غير نشط.",
     "MEMBER_REMOVED": "لا يمكن للعضو المُزال العودة إلا بدعوة جديدة.",
-    "ONLINE_BOOKING_NOT_ALLOWED": "يتطلب الحجز عبر الإنترنت عيادة مصادقًا عليها وخدمة واحدة على الأقل قابلة للحجز عبر الإنترنت."
+    "ONLINE_BOOKING_NOT_ALLOWED": "يتطلب الحجز عبر الإنترنت عيادة مصادقًا عليها وخدمة واحدة على الأقل قابلة للحجز عبر الإنترنت.",
+    "SCHEDULE_OVERLAP": "هذه التواريخ تتداخل مع جدول آخر من النوع نفسه لهذا الطبيب.",
+    "CHECK_IN_NOT_TODAY": "لا يمكن تسجيل الحضور إلا في يوم الموعد.",
+    "SESSION_CLOSED": "تم إغلاق يوم عمل هذا الطبيب."
   },
   "auth": {
     "signInTitle": "تسجيل الدخول",
@@ -206,7 +213,7 @@
     "emptyFiltered": "لا توجد مواعيد لهذا الطبيب في هذا اليوم.",
     "overbooked": "حجز إضافي",
     "hiddenPatient": "مريض غير ظاهر",
-    "queueNote": "تسجيل الحضور وقائمة الانتظار سيصلان مع وحدة SmartFlow.",
+    "queueNote": "مناداة المرضى وتقدير مدة الانتظار ستأتي مع SmartFlow.",
     "count": "{count, plural, =0 {لا مواعيد} one {موعد واحد} two {موعدان} few {# مواعيد} many {# موعدًا} other {# موعد}}",
     "confirm": "تأكيد",
     "reschedule": "تغيير الموعد",
@@ -225,7 +232,27 @@
     "cancelKeep": "الإبقاء على الموعد",
     "noShowTitle": "تسجيل الغياب؟",
     "noShowBody": "لم يحضر {patient} إلى موعد {time}. يُسجَّل الغياب في السجل.",
-    "noShowKeep": "رجوع"
+    "noShowKeep": "رجوع",
+    "checkIn": "حضر",
+    "checkInDone": "تم تسجيل الحضور · التذكرة رقم {ticket}",
+    "walkIn": "مريض دون موعد",
+    "walkInTitle": "مريض دون موعد",
+    "walkInDescription": "يدخل المريض قائمة انتظار الطبيب حسب وقت وصوله. لا يُحجز أي وقت في الأجندة.",
+    "walkInSubmit": "تسجيل الحضور",
+    "walkInDone": "تم تسجيل المريض · التذكرة رقم {ticket}",
+    "ticket": "رقم {ticket}",
+    "left": "غادر",
+    "leftTitle": "هل غادر {name}؟",
+    "leftBody": "يخرج المريض من قائمة الانتظار ويُلغى الموعد بسبب «غادر قبل الاستشارة».",
+    "leftNote": "ملاحظة",
+    "leftDone": "تم إخراج المريض من قائمة الانتظار",
+    "waitingRoom": "قاعة الانتظار",
+    "waitingRoomHint": "المرضى الحاضرون حسب ترتيب الدخول عند كل طبيب: حسب وقت موعدهم إذا حضروا في الوقت، وإلا حسب وقت وصولهم.",
+    "waitingEmpty": "لا يوجد أي مريض في الانتظار.",
+    "waitingCount": "{count, plural, zero {لا أحد في الانتظار} one {واحد في الانتظار} two {اثنان في الانتظار} few {# في الانتظار} many {# في الانتظار} other {# في الانتظار}}",
+    "waitingSince": "وصل على {time} · {minutes, plural, zero {# دقيقة} one {دقيقة واحدة} two {دقيقتان} few {# دقائق} many {# دقيقة} other {# دقيقة}}",
+    "endOfDay": "{count, plural, zero {لا موعد للإغلاق} one {موعد واحد للإغلاق} two {موعدان للإغلاق} few {# مواعيد للإغلاق} many {# موعدًا للإغلاق} other {# موعد للإغلاق}}",
+    "endOfDayHint": "مواعيد مؤكدة مرّ وقتها دون تسجيل الحضور. سجّلها كغياب أو ألغها: لا يتم أي شيء تلقائيًا."
   },
   "booking": {
     "title": "موعد جديد",
@@ -249,7 +276,9 @@
     "overbookReason": "سبب الحجز الإضافي",
     "overbookHint": "مخصص للحالات الإدارية المستعجلة. يُحفظ السبب في السجل.",
     "submit": "إنشاء الموعد",
-    "rescheduleSubmit": "تغيير الموعد"
+    "rescheduleSubmit": "تغيير الموعد",
+    "visitReason": "سبب الزيارة",
+    "visitReasonHint": "باختصار، مثلًا «مراقبة» أو «شهادة». دون تفاصيل طبية: يطّلع عليه فريق العيادة."
   },
   "doctor": {
     "title": "يومي",
@@ -393,7 +422,9 @@
     "typeHeading": "عنوان القسم",
     "typeBody": "النص الأساسي",
     "typeSmall": "نص ثانوي",
-    "typeCaption": "التعليقات وعناوين الأعمدة"
+    "typeCaption": "التعليقات وعناوين الأعمدة",
+    "weeklyHours": "محرر مواعيد العمل",
+    "weeklyHoursHint": "عرض توضيحي دون حفظ. يحتوي يوم الثلاثاء عمدًا على فترتين متداخلتين."
   },
   "forms": {
     "errors": {
@@ -417,7 +448,10 @@
       "invalidInpe": "من 3 إلى 20 حرفًا لاتينيًا أو رقمًا.",
       "durationStep": "بخطوات من 5 دقائق.",
       "invalidPrice": "مبلغ غير صحيح (مثال: 250 أو 250,50).",
-      "nameRequired": "أدخل اسمًا بالفرنسية أو بالعربية."
+      "nameRequired": "أدخل اسمًا بالفرنسية أو بالعربية.",
+      "invalidTime": "وقت غير صالح (HH:MM).",
+      "timeStep": "استعمل فواصل من 5 دقائق.",
+      "windowOverlap": "هذه الفترة تتداخل مع فترة أخرى في اليوم نفسه."
     }
   },
   "signUp": {
@@ -447,7 +481,7 @@
   "onboarding": {
     "step": "الخطوة 1 من 2 · بعدها: التحقق بخطوتين",
     "title": "إنشاء عيادتك",
-    "subtitle": "سيتحقق فريق SmartClinic من عيادتك. يمكنك إعدادها ابتداءً من الآن.",
+    "subtitle": "سيتحقق فريق SmartCabin من عيادتك. يمكنك إعدادها ابتداءً من الآن.",
     "displayName": "اسم العيادة",
     "displayNameHint": "كما سيظهر للمرضى.",
     "slug": "عنوان الحجز",
@@ -457,7 +491,7 @@
     "city": "المدينة",
     "phone": "هاتف العيادة",
     "defaultLocale": "اللغة الرئيسية",
-    "acceptTerms": "أوافق على شروط الاستخدام وسياسة الخصوصية الخاصة بـ SmartClinic.",
+    "acceptTerms": "أوافق على شروط الاستخدام وسياسة الخصوصية الخاصة بـ SmartCabin.",
     "document": {
       "terms_of_service": "شروط الاستخدام",
       "privacy_policy": "سياسة الخصوصية"
@@ -516,7 +550,7 @@
   },
   "invite": {
     "title": "الانضمام إلى عيادة",
-    "subtitle": "تمت دعوتك للانضمام إلى فريق عيادة على SmartClinic.",
+    "subtitle": "تمت دعوتك للانضمام إلى فريق عيادة على SmartCabin.",
     "missingToken": "الرابط غير مكتمل. اطلب دعوة جديدة.",
     "signInFirst": "سجّل الدخول بالبريد الإلكتروني المدعو، أو أنشئ حسابك، ثم أعد فتح هذا الرابط.",
     "reopen": "احتفظ بهذا الرابط: يبقى صالحًا حتى انتهاء صلاحيته.",
@@ -683,5 +717,164 @@
     "mergedNotice": "تم دمج هذا الملف في ملف آخر.",
     "openSurvivor": "فتح الملف المحتفظ به",
     "includesMerged": "{count, plural, one {يتضمن هذا الملف سجل ملف مدمج.} two {يتضمن هذا الملف سجل ملفين مدمجين.} few {يتضمن هذا الملف سجل # ملفات مدمجة.} many {يتضمن هذا الملف سجل # ملفًا مدمجًا.} other {يتضمن هذا الملف سجل # ملف مدمج.}}"
+  },
+  "services": {
+    "title": "الخدمات",
+    "subtitle": "الخدمات التي تقدمها العيادة: الاسم والمدة والثمن الافتراضي. يمكن لكل طبيب تعديل المدة والثمن.",
+    "add": "إضافة خدمة",
+    "addTitle": "خدمة جديدة",
+    "edit": "تعديل",
+    "editTitle": "تعديل «{name}»",
+    "saved": "تم حفظ الخدمة",
+    "nameFr": "الاسم بالفرنسية",
+    "nameAr": "الاسم بالعربية",
+    "nameHint": "أحد الاسمين على الأقل.",
+    "duration": "المدة",
+    "durationHint": "بالدقائق، بفواصل من 5 (من 5 إلى 480).",
+    "price": "الثمن (درهم)",
+    "priceHint": "مثال: 250 أو 250,50.",
+    "onlineBookable": "قابلة للحجز عبر الإنترنت",
+    "onlineBookableHint": "سيتمكن المرضى من اختيارها عند تفعيل الحجز عبر الإنترنت.",
+    "duplicate": "توجد خدمة بهذا الاسم.",
+    "minutes": "{count, plural, zero {# دقيقة} one {دقيقة واحدة} two {دقيقتان} few {# دقائق} many {# دقيقة} other {# دقيقة}}",
+    "offeredBy": "يقدمها",
+    "doctorsCount": "{count, plural, =0 {لا أحد من الأطباء} one {طبيب واحد} two {طبيبان} few {# أطباء} many {# طبيبًا} other {# طبيب}}",
+    "active": "نشطة",
+    "archived": "مؤرشفة",
+    "archive": "أرشفة",
+    "archiveTitle": "أرشفة «{name}»؟",
+    "archiveBody": "لن يعود حجزها ممكنًا. المواعيد الحالية والسجل لا يتغيران. يمكنك استعادتها لاحقًا.",
+    "restore": "استعادة",
+    "restoreTitle": "استعادة «{name}»؟",
+    "restoreBody": "تصبح متاحة من جديد للأطباء الذين يقدمونها. يبقى الحجز عبر الإنترنت معطلًا إلى أن تعيد تفعيله.",
+    "empty": "لا توجد خدمات",
+    "emptyHint": "أضف خدمات العيادة (استشارة، مراقبة…) ثم أسندها إلى الأطباء."
+  },
+  "schedules": {
+    "title": "مواعيد العمل",
+    "subtitle": "المواعيد المعتادة والمواعيد الاستثنائية (رمضان، الصيف…) وغيابات كل طبيب.",
+    "doctorTitle": "مواعيد عمل الطبيب",
+    "doctorSubtitle": "مواعيد الاستشارة والغيابات. التعديلات لا تنقل أي موعد ولا تلغيه.",
+    "backToList": "جميع الأطباء",
+    "open": "إدارة",
+    "noDoctors": "لا يوجد أطباء",
+    "noDoctorsHint": "سيظهر أطباء العيادة هنا.",
+    "weekday": {
+      "1": "الاثنين",
+      "2": "الثلاثاء",
+      "3": "الأربعاء",
+      "4": "الخميس",
+      "5": "الجمعة",
+      "6": "السبت",
+      "7": "الأحد"
+    },
+    "closed": "مغلق",
+    "startOf": "البداية — {day}",
+    "endOf": "النهاية — {day}",
+    "removeWindow": "حذف الفترة {start}–{end} يوم {day}",
+    "addWindow": "إضافة فترة",
+    "weeklyHours": "{hours} ساعة في الأسبوع",
+    "weeklyHoursMinutes": "{hours} ساعة و{minutes} دقيقة في الأسبوع",
+    "saved": "تم حفظ مواعيد العمل",
+    "discard": "إلغاء التعديلات",
+    "copyMonday": "نسخ مواعيد الاثنين من الثلاثاء إلى السبت",
+    "edit": "تعديل",
+    "addOverride": "إضافة مواعيد استثنائية",
+    "addOverrideTitle": "مواعيد استثنائية",
+    "editOverrideTitle": "تعديل «{name}»",
+    "overrideHint": "خلال هذه التواريخ، تحل هذه المواعيد محل المواعيد المعتادة. اليوم الذي لا فترة فيه يكون مغلقًا.",
+    "overrideName": "الاسم",
+    "overrideNameHint": "مثال: رمضان 2027، مواعيد الصيف.",
+    "validFrom": "من",
+    "validUntil": "إلى",
+    "delete": "حذف",
+    "deleteTitle": "حذف «{name}»؟",
+    "deleteBody": "ستُطبَّق المواعيد المعتادة من جديد في هذه التواريخ. لا يُعدَّل أي موعد.",
+    "deleted": "تم حذف المواعيد",
+    "addTimeOff": "إضافة غياب",
+    "addTimeOffTitle": "غياب جديد",
+    "timeOffHint": "بالتوقيت المحلي للعيادة. لن يُقترح أي موعد خلال الغياب؛ المواعيد المحجوزة يُنبَّه إليها ولا تُلغى.",
+    "timeOffFrom": "البداية",
+    "timeOffTo": "النهاية",
+    "timeOffReason": "السبب",
+    "reason": {
+      "leave": "عطلة",
+      "training": "تكوين",
+      "sick": "مرض",
+      "personal": "سبب شخصي",
+      "other": "سبب آخر"
+    },
+    "timeOffNote": "ملاحظة",
+    "timeOffNoteHint": "داخلية للعيادة. لا تكتب فيها أي معلومة طبية.",
+    "timeOffSaved": "تم تسجيل الغياب",
+    "deleteTimeOffLabel": "حذف الغياب {period}",
+    "deleteTimeOffTitle": "حذف هذا الغياب؟",
+    "deleteTimeOffBody": "الغياب {period}. ستصبح المواعيد متاحة من جديد.",
+    "timeOffDeleted": "تم حذف الغياب",
+    "conflictReason": "السبب",
+    "conflict": {
+      "outside_availability": "خارج مواعيد العمل",
+      "doctor_time_off": "خلال غياب",
+      "clinic_closed": "العيادة مغلقة"
+    },
+    "openAgenda": "عرض الأجندة",
+    "period": "الفترة",
+    "hoursColumn": "المواعيد",
+    "closedAllPeriod": "مغلق",
+    "periodRange": "{from} ← {to}",
+    "periodFrom": "ابتداءً من {from}",
+    "conflictsTitle": "{count, plural, zero {لا موعد للمراجعة} one {موعد واحد للمراجعة} two {موعدان للمراجعة} few {# مواعيد للمراجعة} many {# موعدًا للمراجعة} other {# موعد للمراجعة}}",
+    "conflictsBody": "هذه المواعيد المقبلة لم تعد تتوافق مع مواعيد العمل أو مع غياب أو إغلاق. لم يتم تعديلها: اتصل بالمرضى لتغيير موعدهم أو إلغائه.",
+    "regularTitle": "المواعيد المعتادة",
+    "regularHint": "سارية: {period}.",
+    "regularEmpty": "لا توجد مواعيد معتادة: لا يُقترح أي موعد لهذا الطبيب.",
+    "regularDefaultName": "المواعيد المعتادة",
+    "otherVersions": "نسخ أخرى من المواعيد المعتادة: {list}.",
+    "overridesTitle": "المواعيد الاستثنائية",
+    "overridesHint": "رمضان، الصيف، العطل… تحل محل المواعيد المعتادة خلال تواريخها.",
+    "noOverrides": "لا توجد مواعيد استثنائية قادمة",
+    "noOverridesHint": "أضف مثلًا مواعيد رمضان.",
+    "timeOffTitle": "الغيابات",
+    "timeOffSectionHint": "الغيابات القادمة وغيابات الثلاثين يومًا الأخيرة.",
+    "noTimeOff": "لا توجد غيابات",
+    "noTimeOffHint": "ستظهر هنا عطل الطبيب وتكويناته."
+  },
+  "appointment": {
+    "title": "الموعد",
+    "open": "فتح الموعد",
+    "subtitle": "{date} · {time}",
+    "backToDay": "أجندة اليوم",
+    "details": "التفاصيل",
+    "date": "التاريخ",
+    "time": "الساعة",
+    "source": "المصدر",
+    "price": "الثمن عند الحجز",
+    "bookedBy": "حجزه",
+    "visitReason": "سبب الزيارة",
+    "visitReasonEmpty": "غير مُحدَّد",
+    "overbookReason": "سبب الحجز الإضافي",
+    "cancellation": "الإلغاء",
+    "cancellationValue": "{reason} ({actor})",
+    "cancelledBy": {
+      "patient": "من طرف المريض",
+      "clinic": "من طرف العيادة",
+      "system": "تلقائي"
+    },
+    "history": "السجل",
+    "historyHint": "يُسجَّل كل تغيير ولا يمكن تعديله.",
+    "historyEmpty": "لا يوجد أي حدث مسجل.",
+    "event": {
+      "created": "تم إنشاء الموعد",
+      "status_changed": "الحالة: {from} ← {to}",
+      "rescheduled": "تم تغيير الموعد: {from} ← {to}",
+      "details_changed": "تم تعديل المعلومات"
+    },
+    "eventReason": "السبب: {reason}",
+    "actor": {
+      "user": "أحد أعضاء الفريق",
+      "patient": "المريض",
+      "platform_admin": "إدارة المنصة",
+      "system": "تلقائي"
+    }
   }
 }

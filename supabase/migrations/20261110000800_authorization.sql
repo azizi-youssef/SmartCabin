@@ -1,4 +1,4 @@
--- SmartClinic 0008 — RBAC seed and authorization helpers.
+-- SmartCabin 0008 — RBAC seed and authorization helpers.
 -- The permission matrix mirrors docs/RBAC_PERMISSION_MATRIX.md §3 (clinic roles only;
 -- platform operations use platform_admins, MD-18). Changing it requires a migration.
 

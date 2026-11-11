@@ -1,4 +1,4 @@
--- Minimal emulation of the Supabase platform objects that SmartClinic migrations depend on,
+-- Minimal emulation of the Supabase platform objects that SmartCabin migrations depend on,
 -- for running database tests on a plain PostgreSQL (embedded, no Docker).
 -- Mirrors Supabase's definitions of roles, auth.uid()/auth.jwt() and default privileges.
 -- NOT a migration: never applied to a Supabase project (which already provides these).
@@ -12,7 +12,7 @@ create schema if not exists extensions;
 grant usage on schema extensions to anon, authenticated, service_role;
 grant usage on schema public to anon, authenticated, service_role;
 
--- Supabase grants Data API roles everything by default in public; SmartClinic's first
+-- Supabase grants Data API roles everything by default in public; SmartCabin's first
 -- migration revokes these defaults, so they must exist here for that code path to be tested.
 alter default privileges for role postgres in schema public grant all on tables to anon, authenticated, service_role;
 alter default privileges for role postgres in schema public grant all on functions to anon, authenticated, service_role;

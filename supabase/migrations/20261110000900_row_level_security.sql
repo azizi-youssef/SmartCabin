@@ -1,4 +1,4 @@
--- SmartClinic 0009 — Grants and Row-Level Security.
+-- SmartCabin 0009 — Grants and Row-Level Security.
 -- Grants decide WHICH operations an API role can attempt (and on which columns);
 -- RLS decides on WHICH rows. Every table starts from zero privileges for anon/authenticated.
 -- Command tables get SELECT only: their writes go through SECURITY DEFINER commands (MD-04).

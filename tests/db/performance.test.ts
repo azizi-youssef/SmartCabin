@@ -101,15 +101,12 @@ describe('query plans on synthetic volume', () => {
   });
 
   /**
-   * AUDIT FINDING SC-AUD-02 (HIGH) — expected to fail until corrected.
-   * get_available_slots tests every candidate slot against ALL of the doctor's appointments:
-   * the range-overlap predicate cannot use the partial GiST exclusion index (`not is_overbooked`)
-   * and the (doctor_id, starts_at) btree only narrows by doctor. One year of history for one
-   * doctor (8 760 appointments) makes a one-week lookup take seconds. Bounding the search to
-   * `starts_at in (slot_start - 480 min, slot_end)` (480 min is the maximum duration enforced by
-   * appointments_duration) gives the same result in milliseconds. Remove `.fails` once corrected.
+   * AUDIT FINDING SC-AUD-02 (HIGH), fixed by migration 0021: the overlap search in
+   * get_available_slots used to re-read ALL of the doctor's appointments for every candidate slot
+   * (seconds for one year of history). It is now bounded to `starts_at in (slot_start - 480 min,
+   * slot_end)`, 480 minutes being the maximum duration enforced by appointments_duration.
    */
-  it.fails('lists one week of free slots within budget when the doctor has a year of history', async () => {
+  it('lists one week of free slots within budget when the doctor has a year of history', async () => {
     await withRollback(pool, async (db) => {
       const w = await createWorld(db);
       await seedVolume(db, w);

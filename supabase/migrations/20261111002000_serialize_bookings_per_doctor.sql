@@ -1,4 +1,4 @@
--- SmartClinic 0020 — Fix SC-AUD-23: deadlocks between simultaneous overlapping bookings.
+-- SmartCabin 0020 — Fix SC-AUD-23: deadlocks between simultaneous overlapping bookings.
 --
 -- With an exclusion constraint, two transactions that insert overlapping appointments for the
 -- same doctor each add their index entry, then wait for the other's in-progress entry. That cycle
@@ -27,7 +27,7 @@ language sql
 volatile
 set search_path = ''
 as $$
-  select pg_advisory_xact_lock(hashtextextended('smartclinic:doctor-bookings:' || p_doctor_id::text, 0));
+  select pg_advisory_xact_lock(hashtextextended('smartcabin:doctor-bookings:' || p_doctor_id::text, 0));
 $$;
 
 revoke all on function private.lock_doctor_bookings(uuid) from public, anon, authenticated;
@@ -103,7 +103,7 @@ begin
   -- SC-AUD-23: one writer at a time per doctor (see the header).
   perform private.lock_doctor_bookings(p_doctor_id);
 
-  perform set_config('smartclinic.change_reason', coalesce(nullif(btrim(p_overbook_reason), ''), ''), true);
+  perform set_config('smartcabin.change_reason', coalesce(nullif(btrim(p_overbook_reason), ''), ''), true);
   begin
     insert into public.appointments (
       clinic_id, patient_id, doctor_id, service_id, starts_at, ends_at, status, source,
@@ -166,7 +166,7 @@ begin
   -- SC-AUD-23: one writer at a time per doctor (see the header). Taken after the row lock.
   perform private.lock_doctor_bookings(v_appt.doctor_id);
 
-  perform set_config('smartclinic.change_reason', '', true);
+  perform set_config('smartcabin.change_reason', '', true);
   begin
     -- A rescheduled appointment takes a normal slot: the overbooking flag does not carry over.
     update public.appointments

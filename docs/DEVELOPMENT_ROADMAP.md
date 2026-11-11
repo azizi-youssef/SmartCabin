@@ -1,15 +1,15 @@
-# SmartClinic — Development Roadmap
+# SmartCabin — Development Roadmap
 
-Last updated: 2026-11-11 (modules 1–4 done, audit fix SC-AUD-23 applied). Basis: [PHASE_0_REPOSITORY_AUDIT.md](PHASE_0_REPOSITORY_AUDIT.md), [MODELING_REVIEW.md](MODELING_REVIEW.md).
+Last updated: 2026-11-11 (modules 1–7 done; audit fixes SC-AUD-23, -02, -16, -18 applied). Basis: [PHASE_0_REPOSITORY_AUDIT.md](PHASE_0_REPOSITORY_AUDIT.md), [MODELING_REVIEW.md](MODELING_REVIEW.md).
 
 > **Current state (2026-11-11):**
 > - **Phases 1–2 (models):** delivered. PRODUCT_REQUIREMENTS (user stories and acceptance criteria) is still missing.
-> - **Phase 3 (database):** verified on an embedded PostgreSQL 17 with a Supabase shim (Docker is still unavailable). Migrations 0001–0020.
+> - **Phase 3 (database):** verified on an embedded PostgreSQL 17 with a Supabase shim (Docker is still unavailable). Migrations 0001–0023.
 > - **Phase 4 (design system and workspace shells):** implemented. Visual review done without a backend.
-> - **Phase 5, business modules 1–4** (auth and onboarding, clinic and membership, doctors, patients): done. See [CHANGELOG.md](CHANGELOG.md).
-> - **Quality and security audit:** [QUALITY_SECURITY_AUDIT.md](QUALITY_SECURITY_AUDIT.md). Its booking-concurrency finding SC-AUD-23 is fixed by migration 0020.
+> - **Phase 5, business modules 1–7** (auth and onboarding, clinic and membership, doctors, patients, services and availability, staff appointments, reception): done. See [CHANGELOG.md](CHANGELOG.md).
+> - **Quality and security audit:** [QUALITY_SECURITY_AUDIT.md](QUALITY_SECURITY_AUDIT.md). SC-AUD-23 is fixed by migration 0020 and SC-AUD-02 by migration 0021. SC-AUD-01 (SMS sign-up abuse) is the remaining HIGH.
 >
-> **Next step:** module 5, services and availability. The audit's slow slot lookup (SC-AUD-02) belongs to that module. The Supabase Auth flows still need an end-to-end run on a real stack (SC-AUD-10).
+> **Next step:** module 8, SmartFlow (call, consultation start and end, priorities, corrections, estimates, realtime, displays, doctor console). The Supabase Auth flows and the screens still need an end-to-end run on a real stack (SC-AUD-10).
 
 Phases are scope increments, not calendar commitments. A phase closes only when its exit criteria are **verified by executed tests**, and it is reviewed before the next phase starts.
 

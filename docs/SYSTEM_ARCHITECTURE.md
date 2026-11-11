@@ -1,4 +1,4 @@
-# SmartClinic — System Architecture
+# SmartCabin — System Architecture
 
 | | |
 | --- | --- |
@@ -18,10 +18,10 @@ flowchart LR
     reception["Receptionist<br/>desktop at the front desk"]
     doctor["Doctor<br/>desktop or tablet"]
     admin["Clinic owner / admin / accountant<br/>desktop"]
-    platform["Platform admin<br/>SmartClinic team"]
+    platform["Platform admin<br/>SmartCabin team"]
     display["Waiting-room screen<br/>TV browser, no login"]
 
-    sc["SmartClinic<br/>multi-tenant clinic management SaaS<br/>(Next.js on Vercel + Supabase)"]
+    sc["SmartCabin<br/>multi-tenant clinic management SaaS<br/>(Next.js on Vercel + Supabase)"]
 
     email["Email provider<br/>transactional SMTP or API"]
     sms["SMS provider<br/>OTP, reminders, queue alerts"]

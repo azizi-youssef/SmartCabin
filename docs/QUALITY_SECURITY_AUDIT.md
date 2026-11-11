@@ -1,4 +1,4 @@
-# SmartClinic — engineering quality and security audit
+# SmartCabin — engineering quality and security audit
 
 - **Date:** 2026-11-11
 - **Scope:** the repository as it stands. That is migrations 0001–0019, the seed, business modules 1–4 (authentication and onboarding, clinic and membership, doctors, patients), and the Phase 4 workspaces (reception, doctor's day, dashboard, portal, platform administration).
@@ -50,8 +50,8 @@
 | ID | Severity | Finding | Status |
 |---|---|---|---|
 | SC-AUD-01 | HIGH | Patient phone sign-in creates an account for any number, with no CAPTCHA (SMS pumping) | Open (latent until an SMS provider is configured) |
-| SC-AUD-02 | HIGH | Free-slot lookup scans the doctor's entire appointment history for each candidate slot | Open, measured, expected-failure test in place |
-| SC-AUD-23 | HIGH | Simultaneous overlapping bookings for one doctor deadlock (`40P01`) instead of answering "slot taken" | Open, reproduced, fix validated on a test database |
+| SC-AUD-02 | HIGH | Free-slot lookup scans the doctor's entire appointment history for each candidate slot | **Fixed** 2026-11-11 by migration 0021 (see §8) |
+| SC-AUD-23 | HIGH | Simultaneous overlapping bookings for one doctor deadlock (`40P01`) instead of answering "slot taken" | **Fixed** 2026-11-11 by migration 0020 (see §8) |
 | SC-AUD-03 | MEDIUM | An admin can lift an owner-decided suspension of an admin through a new invitation | Open, confirmed, expected-failure test in place |
 | SC-AUD-04 | MEDIUM | Unexpected errors are neither logged nor traceable | Open |
 | SC-AUD-05 | MEDIUM | No Content-Security-Policy; HSTS left to the host | Open |
@@ -65,9 +65,9 @@
 | SC-AUD-13 | LOW | Editing a patient whose preferred channel is WhatsApp silently changes it to SMS | Open |
 | SC-AUD-14 | LOW | No application-level throttling of authenticated commands | Open |
 | SC-AUD-15 | LOW | Patient search does not use the trigram index | Open |
-| SC-AUD-16 | LOW | Slot picker radio group lacks arrow-key navigation | Open |
+| SC-AUD-16 | LOW | Slot picker radio group lacks arrow-key navigation | **Fixed** 2026-11-11 (module 6, see §8) |
 | SC-AUD-17 | LOW | Login CSRF through email-link callback (`token_hash`) | Accepted risk, documented |
-| SC-AUD-18 | LOW | Appointment commands lock the row before checking authorization | Open |
+| SC-AUD-18 | LOW | Appointment commands lock the row before checking authorization | **Fixed** 2026-11-11 by migration 0022 (see §8) |
 | SC-AUD-19 | LOW | Domain events are never consumed or purged | Open (expected: module 9) |
 | SC-AUD-20 | LOW | Clinic closures list is unbounded | Open |
 | SC-AUD-21 | LOW | Dev-only `minimatch` advisory; build depends on Google Fonts | Open |
@@ -366,3 +366,14 @@ No application code, migration or translation was changed. Added or changed:
 - **Temporary measurement tests**, deleted after use: the slot-predicate comparison (SC-AUD-02) and the overlapping-booking stress test (SC-AUD-23). The SC-AUD-23 candidate fix was applied only to the throwaway embedded database. No migration was changed.
 
 An expected failure (`it.fails`) passes while the defect exists. When a correction lands, the test fails, which reminds you to remove `.fails`, and then it guards against regression.
+
+## 8. Corrections after the audit
+
+| Date | Finding | Correction | Evidence |
+|---|---|---|---|
+| 2026-11-11 | SC-AUD-23 (HIGH) | Migration 0020: `private.lock_doctor_bookings()`, a per-doctor advisory lock taken before writing in `book_appointment` and `reschedule_appointment`. `40P01`/`40001` now map to the retry message. | New stress tests in `tests/db/concurrency.test.ts`: 24 rounds of overlapping bookings and 9 of overlapping reschedules. They failed before the migration (22 deadlocks) and pass after it. Full database suite green 3 runs in a row (117 passed + 2 expected failures); concurrency file green 5 runs in a row. |
+| 2026-11-11 | SC-AUD-02 (HIGH) | Migration 0021 (module 5): the overlap search of `get_available_slots` is bounded to `starts_at in (slot start - 480 min, slot end)`, which uses `(doctor_id, starts_at)`. | `tests/db/performance.test.ts`: the expected-failure marker is removed and a one-week lookup with a year of history passes the 1 s budget. The same rewrite fixed a latent defect found by the new time-change property tests. On 2027-02-07 (Ramadan switch), a 20-minute slot lasted 80 minutes, because its end was converted from local time. Ends are now start + duration. |
+| 2026-11-11 | SC-AUD-18 (LOW) | Migration 0022: `private.lock_appointment_for_command` checks clinic access, permission and doctor scope on an unlocked read, then locks the row. `clinic_id` and `doctor_id` are immutable, so the checks still hold. | `tests/db/appointments.test.ts`: while a legitimate transaction holds the row, a user of another clinic gets `NOT_FOUND` at once. Before the fix, the same test hit `lock timeout`. |
+| 2026-11-11 | SC-AUD-16 (LOW) | The slot picker is now a WAI-ARIA radio group (`slot-radio-group.tsx`): a single Tab stop, arrow keys move and select, Home/End, and Left/Right follow the reading direction. | `slot-radio-group.test.tsx`: 3 component tests, including Arabic (RTL). |
+
+Every other finding is still open as described above, including SC-AUD-03, which keeps its expected-failure test.

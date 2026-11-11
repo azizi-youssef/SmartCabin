@@ -1,4 +1,4 @@
--- SmartClinic 0003 — Practice Catalog (BC3): specialties, services, doctors, doctor_services.
+-- SmartCabin 0003 — Practice Catalog (BC3): specialties, services, doctors, doctor_services.
 
 -- ---------------------------------------------------------------------------
 -- specialties — platform reference data

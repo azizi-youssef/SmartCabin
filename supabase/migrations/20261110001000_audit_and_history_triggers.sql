@@ -1,8 +1,8 @@
--- SmartClinic 0010 — Audit trail and appointment history.
+-- SmartCabin 0010 — Audit trail and appointment history.
 -- Audit rows record WHO changed WHICH fields of WHICH entity — never the values (BR-D-04).
 -- Command functions may set two transaction-local settings read here:
---   smartclinic.actor_type    ('platform_admin' for platform commands)
---   smartclinic.change_reason (free-text reason supplied with a command)
+--   smartcabin.actor_type    ('platform_admin' for platform commands)
+--   smartcabin.change_reason (free-text reason supplied with a command)
 
 create function private.current_actor_type()
 returns public.actor_type
@@ -11,7 +11,7 @@ stable
 set search_path = ''
 as $$
   select coalesce(
-    nullif(current_setting('smartclinic.actor_type', true), '')::public.actor_type,
+    nullif(current_setting('smartcabin.actor_type', true), '')::public.actor_type,
     case when (select auth.uid()) is null then 'system'::public.actor_type else 'user'::public.actor_type end);
 $$;
 
@@ -111,7 +111,7 @@ set search_path = ''
 as $$
 declare
   v_actor  public.actor_type := private.current_actor_type();
-  v_reason text := left(nullif(current_setting('smartclinic.change_reason', true), ''), 300);
+  v_reason text := left(nullif(current_setting('smartcabin.change_reason', true), ''), 300);
 begin
   if tg_op = 'INSERT' then
     insert into public.appointment_history

@@ -1,4 +1,4 @@
-# SmartClinic — UI/UX Guidelines and Design System
+# SmartCabin — UI/UX Guidelines and Design System
 
 | | |
 | --- | --- |

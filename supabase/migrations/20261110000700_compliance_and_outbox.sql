@@ -1,4 +1,4 @@
--- SmartClinic 0007 — Compliance (BC12) and the domain-event outbox (BC8 shared kernel).
+-- SmartCabin 0007 — Compliance (BC12) and the domain-event outbox (BC8 shared kernel).
 
 -- ---------------------------------------------------------------------------
 -- audit_logs — append-only; field names only, never values (BR-D-04)

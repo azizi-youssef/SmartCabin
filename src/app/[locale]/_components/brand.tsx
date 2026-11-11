@@ -12,7 +12,7 @@ export function Brand({ inverse = false, className }: { inverse?: boolean; class
         <path d="M10 6h4v4h4v4h-4v4h-4v-4H6v-4h4z" fill="#fff" />
       </svg>
       <span dir="ltr" className={cn('text-heading font-semibold tracking-tight', inverse ? 'text-white' : 'text-ink')}>
-        SmartClinic
+        SmartCabin
       </span>
     </span>
   );

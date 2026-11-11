@@ -13,7 +13,7 @@ import { EmptyState, ErrorState, InlineAlert, UnavailableState } from '@/shared/
 
 import { Brand } from '../_components/brand';
 import { LocaleSwitcher } from '../_components/topbar';
-import { DialogDemos } from './gallery-client';
+import { DialogDemos, WindowsEditorDemo } from './gallery-client';
 
 export const metadata = { robots: { index: false } };
 
@@ -167,6 +167,10 @@ export default async function DesignSystemPage() {
 
         <Section id="dialogs" title={t('designSystem.dialogs')}>
           <DialogDemos />
+        </Section>
+
+        <Section id="hours" title={t('designSystem.weeklyHours')} description={t('designSystem.weeklyHoursHint')}>
+          <WindowsEditorDemo />
         </Section>
       </main>
     </div>

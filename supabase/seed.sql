@@ -1,4 +1,4 @@
--- SmartClinic — LOCAL DEVELOPMENT SEED (applied by `supabase db reset` on the local stack only).
+-- SmartCabin — LOCAL DEVELOPMENT SEED (applied by `supabase db reset` on the local stack only).
 --
 -- Every value here is SYNTHETIC:
 --   * emails use the reserved `.test` domain (cannot reach a real mailbox);
@@ -6,7 +6,7 @@
 --   * names are invented; no real patient data, ever (BR-D-05).
 --
 -- Development sign-in for every seeded staff account (local only, never reuse elsewhere):
---   password: SmartClinic-dev-2026!
+--   password: SmartCabin-dev-2026!
 -- Owners, admins and accountants must enroll TOTP before workspace access (aal2, MD-23).
 --
 -- Accounts:
@@ -29,7 +29,7 @@ returns void
 language plpgsql
 as $$
 declare
-  v_password text := extensions.crypt('SmartClinic-dev-2026!', extensions.gen_salt('bf'));
+  v_password text := extensions.crypt('SmartCabin-dev-2026!', extensions.gen_salt('bf'));
 begin
   insert into auth.users (instance_id, id, aud, role, email, phone, encrypted_password,
                           email_confirmed_at, phone_confirmed_at, raw_app_meta_data, raw_user_meta_data,

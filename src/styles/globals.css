@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* =============================================================================
-   SmartClinic design tokens — docs/UI_UX_GUIDELINES.md
+   SmartCabin design tokens — docs/UI_UX_GUIDELINES.md
    Raw palette (--sc-*) → semantic tokens → Tailwind theme (@theme inline).
    Components use semantic utilities only (bg-surface, text-ink-muted, border-line…),
    never raw hex values, so the palette can change in one place.

@@ -1,6 +1,7 @@
 import { Clock3, Stethoscope } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
 
+import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { ACTIVE_STATUSES, availableActions } from '@/modules/appointments/domain/status';
 import { loadCheckinGrace, loadDayAppointments } from '@/modules/appointments/queries';
@@ -126,7 +127,10 @@ export default async function DoctorPage({
               return (
                 <li key={a.id} className={cn('grid grid-cols-[4.5rem_minmax(0,1fr)_auto] items-center gap-x-4 px-4 py-2.5', a.id === nextUp?.id && 'bg-accent-soft/60')}>
                   <span className="grid leading-tight tabular">
-                    <time dateTime={a.startsAt} className={cn('font-medium', muted ? 'text-ink-subtle' : 'text-ink')}>{formatTime(locale, a.startsAt, tz)}</time>
+                    <Link href={`/w/${ws.clinic.slug}/appointments/${a.id}`} className={cn('focus-ring rounded-sm font-medium hover:underline', muted ? 'text-ink-subtle' : 'text-accent')}>
+                      <time dateTime={a.startsAt}>{formatTime(locale, a.startsAt, tz)}</time>
+                      <span className="sr-only"> — {t('appointment.open')}</span>
+                    </Link>
                     <time dateTime={a.endsAt} className="text-small text-ink-subtle">{formatTime(locale, a.endsAt, tz)}</time>
                   </span>
                   <span className="grid min-w-0 leading-tight">

@@ -38,6 +38,8 @@ export default async function WorkspaceLayout({ children, params }: { children: 
   }
   const clinicItems: NavGroup['items'] = [];
   if (can(ws, 'doctors.manage')) clinicItems.push({ href: `${base}/doctors`, label: t('nav.doctors'), icon: 'doctor' });
+  if (can(ws, 'services.manage')) clinicItems.push({ href: `${base}/services`, label: t('nav.services'), icon: 'services' });
+  if (can(ws, 'schedules.view')) clinicItems.push({ href: `${base}/schedules`, label: t('nav.schedules'), icon: 'schedules' });
   if (can(ws, 'members.view')) clinicItems.push({ href: `${base}/team`, label: t('nav.team'), icon: 'team' });
   if (can(ws, 'clinic.settings.update') || can(ws, 'clinic.profile.update') || can(ws, 'clinic.closures.manage')) {
     clinicItems.push({ href: `${base}/settings`, label: t('nav.settings'), icon: 'settings' });

@@ -1,4 +1,4 @@
-# SmartClinic — Business Rules and State Machines
+# SmartCabin — Business Rules and State Machines
 
 | | |
 | --- | --- |

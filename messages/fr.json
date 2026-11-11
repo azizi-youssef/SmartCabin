@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "title": "SmartClinic",
+    "title": "SmartCabin",
     "description": "Gestion de cabinet et de clinique"
   },
   "common": {
-    "appName": "SmartClinic",
+    "appName": "SmartCabin",
     "close": "Fermer",
     "cancel": "Annuler",
     "back": "Retour",
@@ -42,7 +42,9 @@
     "clinic": "Clinique",
     "team": "Équipe",
     "settings": "Paramètres",
-    "doctors": "Médecins"
+    "doctors": "Médecins",
+    "services": "Prestations",
+    "schedules": "Horaires"
   },
   "roles": {
     "clinic_owner": "Propriétaire",
@@ -78,7 +80,9 @@
     "clinic_request": "Décision de la clinique",
     "doctor_unavailable": "Médecin indisponible",
     "duplicate": "Doublon",
-    "other": "Autre motif"
+    "other": "Autre motif",
+    "left_before_consultation": "Parti avant la consultation",
+    "not_confirmed_in_time": "Non confirmé à temps"
   },
   "columns": {
     "time": "Heure",
@@ -142,7 +146,10 @@
     "INVITATION_EMAIL_MISMATCH": "Cette invitation a été envoyée à une autre adresse e-mail.",
     "MEMBER_NOT_ACTIVE": "Ce membre n'est pas actif.",
     "MEMBER_REMOVED": "Un membre retiré ne peut revenir que par une nouvelle invitation.",
-    "ONLINE_BOOKING_NOT_ALLOWED": "La prise de rendez-vous en ligne exige une clinique validée et au moins une prestation réservable en ligne."
+    "ONLINE_BOOKING_NOT_ALLOWED": "La prise de rendez-vous en ligne exige une clinique validée et au moins une prestation réservable en ligne.",
+    "SCHEDULE_OVERLAP": "Ces dates chevauchent un autre horaire du même type pour ce médecin.",
+    "CHECK_IN_NOT_TODAY": "L'arrivée ne peut être enregistrée que le jour du rendez-vous.",
+    "SESSION_CLOSED": "La journée de ce médecin est clôturée."
   },
   "auth": {
     "signInTitle": "Connexion",
@@ -206,7 +213,7 @@
     "emptyFiltered": "Aucun rendez-vous pour ce médecin ce jour.",
     "overbooked": "Surbooké",
     "hiddenPatient": "Patient non visible",
-    "queueNote": "L'enregistrement des arrivées et la file d'attente arrivent avec le module SmartFlow.",
+    "queueNote": "L'appel des patients et l'estimation de l'attente arrivent avec SmartFlow.",
     "count": "{count, plural, =0 {Aucun rendez-vous} one {# rendez-vous} other {# rendez-vous}}",
     "confirm": "Confirmer",
     "reschedule": "Déplacer",
@@ -225,7 +232,27 @@
     "cancelKeep": "Garder le rendez-vous",
     "noShowTitle": "Marquer comme absent ?",
     "noShowBody": "{patient} ne s'est pas présenté au rendez-vous de {time}. L'absence est enregistrée dans l'historique.",
-    "noShowKeep": "Revenir"
+    "noShowKeep": "Revenir",
+    "checkIn": "Arrivé",
+    "checkInDone": "Arrivée enregistrée · ticket n° {ticket}",
+    "walkIn": "Patient sans rendez-vous",
+    "walkInTitle": "Patient sans rendez-vous",
+    "walkInDescription": "Le patient entre dans la file du médecin à son heure d'arrivée. Aucun créneau de l'agenda n'est pris.",
+    "walkInSubmit": "Enregistrer l'arrivée",
+    "walkInDone": "Patient enregistré · ticket n° {ticket}",
+    "ticket": "N° {ticket}",
+    "left": "Parti",
+    "leftTitle": "{name} est parti(e) ?",
+    "leftBody": "Le patient sort de la file et le rendez-vous est annulé avec le motif « parti avant la consultation ».",
+    "leftNote": "Note",
+    "leftDone": "Patient retiré de la file",
+    "waitingRoom": "Salle d'attente",
+    "waitingRoomHint": "Patients arrivés, dans l'ordre de passage de chaque médecin : à l'heure de leur rendez-vous s'ils arrivent à temps, sinon à leur heure d'arrivée.",
+    "waitingEmpty": "Aucun patient en attente.",
+    "waitingCount": "{count, plural, one {# en attente} other {# en attente}}",
+    "waitingSince": "Arrivé à {time} · {minutes, plural, one {# min} other {# min}}",
+    "endOfDay": "{count, plural, one {# rendez-vous à clôturer} other {# rendez-vous à clôturer}}",
+    "endOfDayHint": "Rendez-vous confirmés dont l'heure est passée sans arrivée enregistrée. Marquez-les absents ou annulez-les : rien n'est fait automatiquement."
   },
   "booking": {
     "title": "Nouveau rendez-vous",
@@ -249,7 +276,9 @@
     "overbookReason": "Motif du surbooking",
     "overbookHint": "Réservé aux urgences administratives. Le motif est conservé dans l'historique.",
     "submit": "Créer le rendez-vous",
-    "rescheduleSubmit": "Déplacer le rendez-vous"
+    "rescheduleSubmit": "Déplacer le rendez-vous",
+    "visitReason": "Motif de la visite",
+    "visitReasonHint": "Court, par exemple « contrôle » ou « certificat ». Pas de détail médical : il est visible par l'équipe."
   },
   "doctor": {
     "title": "Ma journée",
@@ -393,7 +422,9 @@
     "typeHeading": "Titre de section",
     "typeBody": "Corps de texte",
     "typeSmall": "Texte secondaire",
-    "typeCaption": "Légende et en-têtes de colonnes"
+    "typeCaption": "Légende et en-têtes de colonnes",
+    "weeklyHours": "Éditeur d'horaires",
+    "weeklyHoursHint": "Démonstration sans enregistrement. Le mardi contient volontairement deux plages qui se chevauchent."
   },
   "forms": {
     "errors": {
@@ -417,7 +448,10 @@
       "invalidInpe": "3 à 20 lettres ou chiffres.",
       "durationStep": "Par pas de 5 minutes.",
       "invalidPrice": "Montant invalide (ex. 250 ou 250,50).",
-      "nameRequired": "Indiquez un nom en français ou en arabe."
+      "nameRequired": "Indiquez un nom en français ou en arabe.",
+      "invalidTime": "Heure invalide (HH:MM).",
+      "timeStep": "Utilisez des pas de 5 minutes.",
+      "windowOverlap": "Cette plage chevauche une autre plage du même jour."
     }
   },
   "signUp": {
@@ -447,7 +481,7 @@
   "onboarding": {
     "step": "Étape 1 sur 2 · ensuite : vérification en deux étapes",
     "title": "Créer votre clinique",
-    "subtitle": "Votre clinique sera vérifiée par l'équipe SmartClinic. Vous pouvez la configurer dès maintenant.",
+    "subtitle": "Votre clinique sera vérifiée par l'équipe SmartCabin. Vous pouvez la configurer dès maintenant.",
     "displayName": "Nom de la clinique ou du cabinet",
     "displayNameHint": "Tel qu'il apparaîtra aux patients.",
     "slug": "Adresse de réservation",
@@ -457,7 +491,7 @@
     "city": "Ville",
     "phone": "Téléphone de la clinique",
     "defaultLocale": "Langue principale",
-    "acceptTerms": "J'accepte les conditions d'utilisation et la politique de confidentialité de SmartClinic.",
+    "acceptTerms": "J'accepte les conditions d'utilisation et la politique de confidentialité de SmartCabin.",
     "document": {
       "terms_of_service": "Conditions d'utilisation",
       "privacy_policy": "Politique de confidentialité"
@@ -516,7 +550,7 @@
   },
   "invite": {
     "title": "Rejoindre une clinique",
-    "subtitle": "Vous avez été invité à rejoindre l'équipe d'une clinique sur SmartClinic.",
+    "subtitle": "Vous avez été invité à rejoindre l'équipe d'une clinique sur SmartCabin.",
     "missingToken": "Le lien est incomplet. Demandez une nouvelle invitation.",
     "signInFirst": "Connectez-vous avec l'adresse e-mail invitée, ou créez votre compte, puis rouvrez ce lien.",
     "reopen": "Gardez ce lien : il reste valable jusqu'à son expiration.",
@@ -683,5 +717,164 @@
     "mergedNotice": "Ce dossier a été fusionné dans un autre dossier.",
     "openSurvivor": "Ouvrir le dossier conservé",
     "includesMerged": "{count, plural, one {Ce dossier inclut l'historique d'un dossier fusionné.} other {Ce dossier inclut l'historique de # dossiers fusionnés.}}"
+  },
+  "services": {
+    "title": "Prestations",
+    "subtitle": "Actes proposés par la clinique : nom, durée et prix par défaut. Chaque médecin peut ajuster durée et prix.",
+    "add": "Ajouter une prestation",
+    "addTitle": "Nouvelle prestation",
+    "edit": "Modifier",
+    "editTitle": "Modifier « {name} »",
+    "saved": "Prestation enregistrée",
+    "nameFr": "Nom en français",
+    "nameAr": "Nom en arabe",
+    "nameHint": "Au moins un des deux noms.",
+    "duration": "Durée",
+    "durationHint": "En minutes, par pas de 5 (5 à 480).",
+    "price": "Prix (MAD)",
+    "priceHint": "Exemple : 250 ou 250,50.",
+    "onlineBookable": "Réservable en ligne",
+    "onlineBookableHint": "Les patients pourront la choisir lorsque la réservation en ligne sera activée.",
+    "duplicate": "Une prestation porte déjà ce nom.",
+    "minutes": "{count, plural, one {# min} other {# min}}",
+    "offeredBy": "Proposée par",
+    "doctorsCount": "{count, plural, =0 {Aucun médecin} one {# médecin} other {# médecins}}",
+    "active": "Active",
+    "archived": "Archivée",
+    "archive": "Archiver",
+    "archiveTitle": "Archiver « {name} » ?",
+    "archiveBody": "Elle ne pourra plus être réservée. Les rendez-vous existants et l'historique ne changent pas. Vous pourrez la restaurer.",
+    "restore": "Restaurer",
+    "restoreTitle": "Restaurer « {name} » ?",
+    "restoreBody": "Elle redevient disponible pour les médecins qui la proposent. La réservation en ligne reste désactivée jusqu'à ce que vous la réactiviez.",
+    "empty": "Aucune prestation",
+    "emptyHint": "Ajoutez les actes de la clinique (consultation, contrôle…), puis attribuez-les aux médecins."
+  },
+  "schedules": {
+    "title": "Horaires",
+    "subtitle": "Horaires habituels, horaires exceptionnels (Ramadan, été…) et absences de chaque médecin.",
+    "doctorTitle": "Horaires du médecin",
+    "doctorSubtitle": "Horaires de consultation et absences. Les modifications ne déplacent ni n'annulent aucun rendez-vous.",
+    "backToList": "Tous les médecins",
+    "open": "Gérer",
+    "noDoctors": "Aucun médecin",
+    "noDoctorsHint": "Les médecins de la clinique apparaîtront ici.",
+    "weekday": {
+      "1": "Lundi",
+      "2": "Mardi",
+      "3": "Mercredi",
+      "4": "Jeudi",
+      "5": "Vendredi",
+      "6": "Samedi",
+      "7": "Dimanche"
+    },
+    "closed": "Fermé",
+    "startOf": "Début — {day}",
+    "endOf": "Fin — {day}",
+    "removeWindow": "Supprimer la plage {start}–{end} du {day}",
+    "addWindow": "Ajouter une plage",
+    "weeklyHours": "{hours} h par semaine",
+    "weeklyHoursMinutes": "{hours} h {minutes} min par semaine",
+    "saved": "Horaires enregistrés",
+    "discard": "Annuler les modifications",
+    "copyMonday": "Copier le lundi du mardi au samedi",
+    "edit": "Modifier",
+    "addOverride": "Ajouter des horaires exceptionnels",
+    "addOverrideTitle": "Horaires exceptionnels",
+    "editOverrideTitle": "Modifier « {name} »",
+    "overrideHint": "Pendant ces dates, ces horaires remplacent les horaires habituels. Une journée sans plage est fermée.",
+    "overrideName": "Nom",
+    "overrideNameHint": "Exemple : Ramadan 2027, Horaires d'été.",
+    "validFrom": "Du",
+    "validUntil": "Au",
+    "delete": "Supprimer",
+    "deleteTitle": "Supprimer « {name} » ?",
+    "deleteBody": "Les horaires habituels s'appliqueront de nouveau à ces dates. Aucun rendez-vous n'est modifié.",
+    "deleted": "Horaires supprimés",
+    "addTimeOff": "Ajouter une absence",
+    "addTimeOffTitle": "Nouvelle absence",
+    "timeOffHint": "Heures locales de la clinique. Aucun créneau ne sera proposé pendant l'absence ; les rendez-vous déjà pris sont signalés, pas annulés.",
+    "timeOffFrom": "Début",
+    "timeOffTo": "Fin",
+    "timeOffReason": "Motif",
+    "reason": {
+      "leave": "Congé",
+      "training": "Formation",
+      "sick": "Maladie",
+      "personal": "Raison personnelle",
+      "other": "Autre"
+    },
+    "timeOffNote": "Note",
+    "timeOffNoteHint": "Interne à la clinique. N'y écrivez pas d'information médicale.",
+    "timeOffSaved": "Absence enregistrée",
+    "deleteTimeOffLabel": "Supprimer l'absence {period}",
+    "deleteTimeOffTitle": "Supprimer cette absence ?",
+    "deleteTimeOffBody": "Absence {period}. Les créneaux redeviendront disponibles.",
+    "timeOffDeleted": "Absence supprimée",
+    "conflictReason": "Motif",
+    "conflict": {
+      "outside_availability": "Hors des horaires",
+      "doctor_time_off": "Pendant une absence",
+      "clinic_closed": "Clinique fermée"
+    },
+    "openAgenda": "Voir l'agenda",
+    "period": "Période",
+    "hoursColumn": "Horaires",
+    "closedAllPeriod": "Fermé",
+    "periodRange": "{from} → {to}",
+    "periodFrom": "À partir du {from}",
+    "conflictsTitle": "{count, plural, one {# rendez-vous à revoir} other {# rendez-vous à revoir}}",
+    "conflictsBody": "Ces rendez-vous futurs ne correspondent plus aux horaires, à une absence ou à une fermeture. Ils n'ont pas été modifiés : contactez les patients pour les déplacer ou les annuler.",
+    "regularTitle": "Horaires habituels",
+    "regularHint": "En vigueur : {period}.",
+    "regularEmpty": "Aucun horaire habituel : aucun créneau n'est proposé pour ce médecin.",
+    "regularDefaultName": "Horaires habituels",
+    "otherVersions": "Autres versions des horaires habituels : {list}.",
+    "overridesTitle": "Horaires exceptionnels",
+    "overridesHint": "Ramadan, été, jours fériés… Ils remplacent les horaires habituels pendant leurs dates.",
+    "noOverrides": "Aucun horaire exceptionnel à venir",
+    "noOverridesHint": "Ajoutez par exemple les horaires du Ramadan.",
+    "timeOffTitle": "Absences",
+    "timeOffSectionHint": "Absences à venir et des 30 derniers jours.",
+    "noTimeOff": "Aucune absence",
+    "noTimeOffHint": "Les congés et formations du médecin apparaîtront ici."
+  },
+  "appointment": {
+    "title": "Rendez-vous",
+    "open": "ouvrir le rendez-vous",
+    "subtitle": "{date} · {time}",
+    "backToDay": "Agenda du jour",
+    "details": "Détails",
+    "date": "Date",
+    "time": "Heure",
+    "source": "Origine",
+    "price": "Prix au moment de la réservation",
+    "bookedBy": "Réservé par",
+    "visitReason": "Motif de la visite",
+    "visitReasonEmpty": "Non renseigné",
+    "overbookReason": "Motif de la surréservation",
+    "cancellation": "Annulation",
+    "cancellationValue": "{reason} ({actor})",
+    "cancelledBy": {
+      "patient": "par le patient",
+      "clinic": "par la clinique",
+      "system": "automatique"
+    },
+    "history": "Historique",
+    "historyHint": "Chaque changement est enregistré et ne peut pas être modifié.",
+    "historyEmpty": "Aucun événement enregistré.",
+    "event": {
+      "created": "Rendez-vous créé",
+      "status_changed": "Statut : {from} → {to}",
+      "rescheduled": "Déplacé : {from} → {to}",
+      "details_changed": "Informations modifiées"
+    },
+    "eventReason": "Motif : {reason}",
+    "actor": {
+      "user": "Un membre de l'équipe",
+      "patient": "Le patient",
+      "platform_admin": "Administration de la plateforme",
+      "system": "Automatique"
+    }
   }
 }

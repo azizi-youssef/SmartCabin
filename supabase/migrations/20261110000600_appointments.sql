@@ -1,4 +1,4 @@
--- SmartClinic 0006 — Appointments (BC6): appointments, history, transition table.
+-- SmartCabin 0006 — Appointments (BC6): appointments, history, transition table.
 -- Double booking is prevented by an exclusion constraint, which holds under concurrent requests.
 
 -- ---------------------------------------------------------------------------

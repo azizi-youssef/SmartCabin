@@ -1,4 +1,4 @@
--- SmartClinic 0001 — extensions, schemas, privileges, enum types, shared trigger functions.
+-- SmartCabin 0001 — extensions, schemas, privileges, enum types, shared trigger functions.
 -- Additive only. See docs/DATABASE_SCHEMA.md.
 
 -- ---------------------------------------------------------------------------

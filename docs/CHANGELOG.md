@@ -4,11 +4,159 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Nothing has been releas
 
 ## [Unreleased]
 
+### Added — Module 7: reception (2026-11-11)
+
+- **Arrivals (A8):** "Arrivé" on today's confirmed appointments.
+  - The database assigns a **gapless ticket per doctor per day** and the queue position (BR-Q-04): on time (within the check-in grace period) means queued at the appointment time; late means queued at arrival time.
+  - Refused on another day (`CHECK_IN_NOT_TODAY`), on a closed day (`SESSION_CLOSED`), and on any status other than confirmed.
+- **Walk-in patients (A3, MD-10):** "Patient sans rendez-vous" creates the appointment directly checked in, then its ticket. It is queued at arrival time and is idempotent per dialog.
+  - Walk-ins **no longer count in the agenda overlap constraint nor in free slots**: a walk-in can always be registered, and booked times stay bookable.
+- **Left before the consultation (A11):** "Parti" closes the queue entry and cancels the appointment with the reason "left before consultation", plus an optional note.
+- **Waiting room:** for today, per doctor, the patients still waiting, in queue order, with their ticket and how long they have waited.
+- **End-of-day list (MD-09):** confirmed appointments whose time and grace period have passed without check-in. Staff mark them absent or cancel them; nothing is automatic.
+- **Migration 0023:**
+  - the queue foundation of SmartFlow: `doctor_sessions`, created at the first arrival of the day; `queue_entries`; `queue_events`, append-only;
+  - RLS on `queue.view`, where a doctor sees their own queue only;
+  - composite keys tying entry, session and appointment to the same clinic and doctor;
+  - a deferred trigger that rejects any queue state not matching the appointment status;
+  - the commands `check_in_appointment`, `register_walk_in` and `mark_left`.
+- **Tests:**
+  - **9 database tests** (`reception.test.ts`):
+    - check-in effects (ticket, entry, history, queue version);
+    - late arrivals queued at arrival time;
+    - refusals (other day, other status, closed day, permissions, other clinic);
+    - walk-ins alongside a booked appointment, idempotent, priced, on the 5-minute grid;
+    - 8 simultaneous arrivals receiving tickets 1–8 with no gap;
+    - "left" effects;
+    - the queue/status mismatch rejected, immutable ticket, append-only trail;
+    - queue visibility.
+  - **The isolation tests now cover the 3 new tables.**
+  - **3 unit tests** for queue order, waiting time and the end-of-day list.
+- **Verified:**
+  - typecheck and lint clean;
+  - 91 unit tests;
+  - database 141 passed + 1 expected failure (SC-AUD-03, still open), including every existing booking, concurrency and slot test under the changed overlap rule;
+  - production build passes.
+- **Not verified:** the reception screen with live data. It needs a running Supabase backend, which is unavailable on this machine.
+- **Out of scope** (module 8, SmartFlow):
+  - calling patients, starting and finishing the consultation;
+  - priorities and reordering;
+  - corrections (A13, A14);
+  - wait-time estimates;
+  - realtime updates, display screens, the doctor console;
+  - delays, and opening and closing the day.
+
+### Added — Module 6: staff appointments (2026-11-11)
+
+- **Appointment file** (`/w/[slug]/appointments/[id]`), reached from reception, the doctor's day and the patient file:
+  - patient, doctor, service, local date and time, origin, price snapshot;
+  - who booked it, overbooking reason, cancellation (reason and by whom);
+  - the actions still possible for its status;
+  - the **history timeline** (created, status changes, moves with old and new times, reason, and the name of the staff member).
+- **Visit reason:** an optional short field when booking. It is shown only to roles with `appointments.view_reason`, and that permission is now **enforced by the database**:
+  - the `patient_reason` column is no longer readable from the table;
+  - `get_appointment` returns it only with the permission.
+  - The hint asks for no medical detail.
+- **Book from the patient file:** the "Nouveau rendez-vous" button opens the booking dialog with the patient already selected.
+- **Migration 0022:**
+  - `get_appointment()` and `list_appointment_history()`, both scoped like the agenda (other clinics and other doctors' appointments answer `NOT_FOUND`);
+  - `private.member_display_name()`;
+  - the `patient_reason` column grant.
+- **Audit fixes:**
+  - **SC-AUD-18:** commands now check access before locking the appointment, so a user of another clinic can no longer wait on, or hold, that lock;
+  - **SC-AUD-16:** the slot picker follows the WAI-ARIA radio-group pattern (one Tab stop, arrow keys, Home/End, mirrored in Arabic).
+- **Translations:** French and Arabic labels for the two system-only cancellation reasons.
+- **Tests:**
+  - **7 database tests** (`appointments.test.ts`):
+    - the full transition matrix: confirm, cancel, reschedule and no-show from each of the 7 statuses. Each succeeds exactly where the transition table allows, and every refusal leaves the appointment unchanged;
+    - the visit reason withheld without the permission and unreadable from the table;
+    - the appointment scope;
+    - a check that every role able to write appointments may also see the reason (command results include the full row);
+    - the history order, times and staff names;
+    - the lock race. Before the fix it hit `lock timeout`; after, it gets an immediate `NOT_FOUND`.
+  - **3 component tests** for the slot picker keyboard, including RTL.
+- **Verified:**
+  - typecheck and lint clean;
+  - 88 unit and component tests;
+  - database 132 passed + 1 expected failure (SC-AUD-03, still open), including the application ↔ database contract test for the new calls;
+  - production build passes.
+- **Not verified:** the appointment file and the patient-file booking with live data. They need a running Supabase backend, which is unavailable on this machine.
+- **Out of scope** (later modules):
+  - check-in, walk-ins, queue and status corrections (modules 7–8);
+  - the end-of-day list (module 7);
+  - expiry of pending requests and online booking (S7);
+  - notifications (module 9).
+
+### Added — Module 5: services and availability (2026-11-11)
+
+- **Services page** (`/w/[slug]/services`, `services.manage`):
+  - bilingual name, default duration (5-minute steps) and price in MAD, online-booking flag;
+  - create, edit, archive and restore. Services are never deleted, because appointments reference them;
+  - shows how many doctors offer each service.
+- **Schedules** (`/w/[slug]/schedules`, `schedules.view`), then one page per doctor:
+  - **regular weekly hours:** several ranges per day, "copy Monday to Tuesday–Saturday", hours per week;
+  - **dated overrides** (Ramadan, summer…), which replace the regular hours during their dates;
+  - **time off** in the clinic's local time (leave, training, sick, personal, other);
+  - doctors without broader rights see and edit only their own schedule; receptionists may manage time off.
+- **Conflicts, never silent changes (BR-B-12):** after any change, the page lists future appointments that now fall outside the hours, in time off or on a closure, with a link to that day's agenda. Nothing is moved or cancelled.
+- **Migration 0021:**
+  - `save_doctor_schedule()` saves a schedule and its ranges in one transaction. Overrides must be dated, and overlapping schedules are refused (`SCHEDULE_OVERLAP`, a new error code);
+  - `list_doctor_booking_conflicts()` uses the booking rules themselves and returns no patient data.
+- **Fixed in `get_available_slots`:**
+  - **audit SC-AUD-02:** the overlap search is now bounded by time, so a week of slots with a year of history fits the 1 s budget, against 2–5 s before;
+  - **a latent time-change defect (BR-TZ-03), found by the new property tests:** on 2027-02-07 (Ramadan switch), a 20-minute slot in the repeated hour lasted 80 minutes. Slots now end at start + duration, and local times skipped by a switch are no longer offered.
+- **Navigation:** "Prestations" and "Horaires" in the Clinique group, by permission.
+- **Development gallery:** a demo of the weekly hours editor.
+- **Tests:**
+  - **7 database tests** (`availability.test.ts`):
+    - an atomic save with full rollback on any invalid range;
+    - overrides (dated, non-overlapping, kind immutable);
+    - permissions and doctor scope;
+    - cross-clinic foreign keys;
+    - conflicts for reduced hours, time off and closures, with appointments unchanged, no patient data, and scoped access;
+    - **property tests around every time change in the next two years:** every slot is exact, distinct, on its grid and inside its window, and every slot offered on the switch day can be booked.
+    All 7 failed before the migration.
+  - **9 unit tests:** range validation (overlap, order, grid, format), schedule and time-off schemas, editing helpers, current-version choice, time-range parsing.
+- **Verified:**
+  - typecheck and lint clean;
+  - 85 unit tests;
+  - database 125 passed + 1 expected failure (SC-AUD-03, still open), including the application ↔ database contract test for the new calls;
+  - production build passes;
+  - axe found 0 violations on the hours editor in French and Arabic, and the RTL layout was checked at 429 px and 768 px.
+- **Not verified:** the three new screens with live data. They need a running Supabase backend, which is unavailable on this machine (Docker).
+
+### Changed — product renamed to SmartCabin (2026-11-11)
+
+- **SmartClinic is now SmartCabin** everywhere, 97 occurrences in 48 files:
+  - interface brand and page titles;
+  - French and Arabic messages;
+  - the authenticator (TOTP) label;
+  - documentation and code comments;
+  - package name, Supabase `project_id`, dev-server names, test database name.
+- **Database settings renamed** from `smartclinic.*` to `smartcabin.*` (`change_reason`, `actor_type`), inside the existing migrations. No database outside throwaway test instances had applied them; future renames go through new migrations.
+- **Unchanged:** the project folder name, "SmartFlow" (queue module) and the `SC_LOCALE` cookie.
+
+### Fixed — deadlocks between simultaneous overlapping bookings (2026-11-11, audit SC-AUD-23)
+
+- **The problem:** two bookings or reschedules for the same doctor, sent at the same moment with overlapping times, could deadlock on the overlap constraint (`40P01`). Reception then saw "unexpected error" instead of "slot taken", and `concurrency.test.ts` failed intermittently. No double booking was ever committed.
+- **Migration 0020:**
+  - `private.lock_doctor_bookings()`, a transaction-scoped advisory lock per doctor, taken just before writing by `book_appointment` and `reschedule_appointment`;
+  - lock order is acyclic (key → doctor, row → doctor);
+  - nothing else in those functions changed.
+- **Error mapping:** `40P01` and `40001` now map to the retry message (`UNAVAILABLE`) instead of "unexpected error".
+- **Tests:**
+  - 24 rounds of 6 simultaneous overlapping bookings and 9 rounds of 6 overlapping reschedules. Every failure must be `SLOT_UNAVAILABLE` and no overlap may be committed. Both tests failed before the migration (22 deadlocks) and pass after it;
+  - 1 unit test for the mapping.
+- **Verified before the rename:**
+  - full database suite green 3 times in a row (117 passed + 2 expected failures);
+  - concurrency file green 5 times alone;
+  - typecheck, lint, 76 unit tests and the production build pass.
+
 ### Audit — engineering quality and security (2026-11-11)
 
 - **Report:** [QUALITY_SECURITY_AUDIT.md](QUALITY_SECURITY_AUDIT.md).
   - No CRITICAL finding; 3 HIGH, 8 MEDIUM, 12 LOW.
-  - One HIGH, SC-AUD-23, concerns deadlocks between simultaneous overlapping bookings. It makes `concurrency.test.ts` fail intermittently, and it must be corrected before the next module.
+  - One HIGH, SC-AUD-23, concerns deadlocks between simultaneous overlapping bookings. Fixed the same day by migration 0020 (see above).
   - No application code changed.
   - Production readiness not claimed.
 - **New database tests:**

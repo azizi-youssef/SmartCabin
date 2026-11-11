@@ -1,4 +1,4 @@
--- SmartClinic 0013 — Read-only functions for the platform and patient-portal workspaces.
+-- SmartCabin 0013 — Read-only functions for the platform and patient-portal workspaces.
 -- Additive only. Neither function writes data; both are guarded and return minimal columns.
 
 create function private.require_authenticated()

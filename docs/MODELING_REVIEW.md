@@ -1,4 +1,4 @@
-# SmartClinic — Modeling Review
+# SmartCabin — Modeling Review
 
 | | |
 | --- | --- |

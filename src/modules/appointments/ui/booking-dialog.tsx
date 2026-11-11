@@ -27,7 +27,7 @@ export interface BookingCatalog {
 }
 
 /** Patient lookup with debounce; shows at most 8 matches. */
-function PatientLookup({ slug, value, onChange }: { slug: string; value: PatientOption | null; onChange: (p: PatientOption | null) => void }) {
+export function PatientLookup({ slug, value, onChange }: { slug: string; value: PatientOption | null; onChange: (p: PatientOption | null) => void }) {
   const t = useTranslations('booking');
   const te = useTranslations('errors');
   const [query, setQuery] = useState('');
@@ -116,12 +116,15 @@ export function BookingDialog({
   defaultDay,
   catalog,
   canOverbook,
+  initialPatient,
 }: {
   slug: string;
   timeZone: string;
   defaultDay: string;
   catalog: BookingCatalog;
   canOverbook: boolean;
+  /** Pre-selects the patient (booking from the patient file). */
+  initialPatient?: PatientOption;
 }) {
   const t = useTranslations();
   const locale = useLocale() as Locale;
@@ -137,6 +140,7 @@ export function BookingDialog({
   const [overbook, setOverbook] = useState(false);
   const [overbookTime, setOverbookTime] = useState('');
   const [overbookReason, setOverbookReason] = useState('');
+  const [visitReason, setVisitReason] = useState('');
   const [error, setError] = useState<ErrorCode | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -149,7 +153,7 @@ export function BookingDialog({
     setOpen(next);
     if (next) {
       setKey(crypto.randomUUID());
-      setPatient(null);
+      setPatient(initialPatient ?? null);
       setDoctorId(catalog.doctors.length === 1 ? (catalog.doctors[0]?.id ?? '') : '');
       setServiceId('');
       setDay(defaultDay);
@@ -157,6 +161,7 @@ export function BookingDialog({
       setOverbook(false);
       setOverbookTime('');
       setOverbookReason('');
+      setVisitReason('');
       setError(null);
     }
   }
@@ -180,6 +185,7 @@ export function BookingDialog({
         startsAt,
         idempotencyKey: key,
         ...(overbook ? { overbookReason: overbookReason.trim() } : {}),
+        ...(visitReason.trim() ? { patientReason: visitReason.trim() } : {}),
       });
       if (!result.ok) {
         setError(result.code);
@@ -284,6 +290,10 @@ export function BookingDialog({
               ) : null}
             </fieldset>
           ) : null}
+
+          <Field id="booking-visit-reason" label={t('booking.visitReason')} hint={t('booking.visitReasonHint')} optionalLabel={t('common.optional')}>
+            <Input maxLength={200} value={visitReason} onChange={(e) => setVisitReason(e.target.value)} />
+          </Field>
 
           {canOverbook ? (
             <div className="grid gap-3 rounded-md border border-line bg-surface-muted p-3">

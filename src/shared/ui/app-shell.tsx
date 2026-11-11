@@ -2,9 +2,11 @@
 
 import {
   Building2,
+  CalendarClock,
   CalendarDays,
   ClipboardList,
   LayoutDashboard,
+  ListChecks,
   Menu,
   Palette,
   Settings,
@@ -30,6 +32,8 @@ const ICONS = {
   design: Palette,
   team: UserCog,
   settings: Settings,
+  services: ListChecks,
+  schedules: CalendarClock,
 } satisfies Record<string, LucideIcon>;
 
 export type NavIcon = keyof typeof ICONS;

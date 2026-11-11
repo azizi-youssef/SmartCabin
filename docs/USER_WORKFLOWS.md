@@ -1,4 +1,4 @@
-# SmartClinic — User Workflows
+# SmartCabin — User Workflows
 
 | | |
 | --- | --- |
@@ -142,7 +142,7 @@ sequenceDiagram
 ```
 
 **Decisions shown**
-- **Auth and staff emails.** Email verification and password reset use Supabase Auth's mailer, configured to use the same SMTP provider. Every other email goes through the SmartClinic worker, so it can be localized and tracked.
+- **Auth and staff emails.** Email verification and password reset use Supabase Auth's mailer, configured to use the same SMTP provider. Every other email goes through the SmartCabin worker, so it can be localized and tracked.
 - **Approval does not block setup.** Patients can only book once the platform approves the clinic (BR-P-02).
 - **MFA is required** before the owner accepts the data processing agreement and before any platform action (BR-T-06).
 

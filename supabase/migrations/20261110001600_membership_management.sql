@@ -1,4 +1,4 @@
--- SmartClinic 0016 — Module 2: clinic and membership management (read functions).
+-- SmartCabin 0016 — Module 2: clinic and membership management (read functions).
 -- user_profiles and auth.users are visible to their owner only, so listing colleagues needs a
 -- guarded function that returns names and emails of one clinic's members to members.view.
 

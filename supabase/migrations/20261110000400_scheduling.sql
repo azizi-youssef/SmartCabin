@@ -1,4 +1,4 @@
--- SmartClinic 0004 — Scheduling (BC4): schedule periods, weekly windows, time off.
+-- SmartCabin 0004 — Scheduling (BC4): schedule periods, weekly windows, time off.
 -- Schedules hold local wall-clock times; conversion to instants happens per date (BR-TZ-01/02).
 
 -- ---------------------------------------------------------------------------

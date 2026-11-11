@@ -129,6 +129,8 @@ const bookingSchema = z.object({
   /** Generated when the booking form opens: a double submit or a retry cannot create two appointments. */
   idempotencyKey: z.string().min(8).max(100),
   overbookReason: z.string().trim().min(3).max(200).optional(),
+  /** Visit reason, optional; readable only with appointments.view_reason. */
+  patientReason: z.string().trim().max(200).optional(),
 });
 
 export async function bookAppointment(input: z.input<typeof bookingSchema>): Promise<ActionResult<{ id: string }>> {
@@ -145,6 +147,7 @@ export async function bookAppointment(input: z.input<typeof bookingSchema>): Pro
       p_idempotency_key: parsed.data.idempotencyKey,
       p_is_overbooked: Boolean(parsed.data.overbookReason),
       p_overbook_reason: parsed.data.overbookReason ?? null,
+      p_patient_reason: parsed.data.patientReason || null,
     });
     if (error) return failure(error);
     const row = z.object({ id: uuid }).safeParse(data);

@@ -1,4 +1,4 @@
-# SmartClinic — Database Schema (Phase 3 foundation)
+# SmartCabin — Database Schema (Phase 3 foundation)
 
 | | |
 | --- | --- |
@@ -48,6 +48,9 @@ pnpm db:types          # regenerates src/shared/lib/supabase/database.types.ts
 | 0018 | `…001800_patient_management.sql` | `register_patient()` (record + consents, atomic), `get_patient()` (audited view), `set_patient_archived()`, `list_patient_duplicates()`, `merge_patients()` |
 | 0019 | `…001900_book_appointment_serialize_idempotent_retries.sql` | Advisory lock per (clinic, idempotency key): same-key retries no longer deadlock |
 | 0020 | `20261111002000_serialize_bookings_per_doctor.sql` | `private.lock_doctor_bookings()`: advisory lock per doctor in `book_appointment` and `reschedule_appointment`, so overlapping simultaneous writes answer `SLOT_UNAVAILABLE` instead of deadlocking (audit SC-AUD-23) |
+| 0021 | `20261111002100_availability_management.sql` | Module 5: `save_doctor_schedule()` (a schedule and its weekly windows in one transaction; overrides must be dated; `SCHEDULE_OVERLAP`), `list_doctor_booking_conflicts()` (future appointments that no longer fit, using the booking rules, with no patient data). `get_available_slots` corrected: bounded overlap search (audit SC-AUD-02) and time-change days (BR-TZ-03) |
+| 0022 | `20261111002200_staff_appointments.sql` | Module 6: `get_appointment()` (the appointment file; visit reason only with `appointments.view_reason`), `list_appointment_history()` (timeline with the names of clinic staff), `private.member_display_name()`. The `patient_reason` column is no longer granted to `authenticated`. `private.lock_appointment_for_command` now authorizes before locking (audit SC-AUD-18) |
+| 0023 | `20261111002300_reception_check_in.sql` | Module 7: `doctor_sessions` (one doctor's day, gapless ticket counter, queue version), `queue_entries`, `queue_events` (append-only), with RLS on `queue.view` (a doctor sees their own queue). A deferred trigger keeps queue state and appointment status matching. Commands `check_in_appointment()` (A8), `register_walk_in()` (A3), `mark_left()` (A11). Walk-ins no longer count in `appointments_no_overlap` nor in free slots (MD-10) |
 
 ## 3. Tables
 
@@ -113,6 +116,12 @@ constraint appointments_no_overlap exclude using gist (
   Every failure must be `SLOT_UNAVAILABLE`, and no overlap may be committed.
 - **Idempotency:** a replay with the same key (`appointments_idempotency_key`, unique per clinic) returns the original appointment, including when the retries arrive concurrently.
 - **Free time:** cancelled, completed and no-show appointments free their time automatically (partial predicate).
+- **Slot generation and time changes (BR-TZ-02/03, migration 0021):**
+  - candidate slots are local wall-clock times converted per date;
+  - a local time that does not exist on a time-change date (Morocco's Ramadan switch) is not offered;
+  - a slot ends at start + duration in real minutes, and must end inside its window.
+  - Property tests around every time change in the next two years check that every slot is exact, distinct and inside its window, and that each slot offered on the switch day can be booked.
+- **Walk-ins (MD-10, migration 0023):** a walk-in appointment (`source = walk_in`) queues behind the agenda. It is excluded from the constraint and from free-slot computation, so a walk-in can always be registered, and booked slots stay bookable.
 - **Overbooking (MD-08):** an overbooked appointment is excluded from the constraint. It requires the `appointments.overbook` permission and a reason.
 - **Availability, time off and closures** are checked by `private.assert_slot_bookable()` in local wall-clock time per date (BR-TZ-02).
 
@@ -195,4 +204,15 @@ All of them are `SECURITY DEFINER` with `search_path = ''`. EXECUTE is granted t
 
 ## 8. Test results
 
-**None yet.** The suites in `tests/db/` (security meta-tests, tenant isolation, RBAC, scheduling and booking, concurrency, workspace read functions) are written and type-check, but have never run against a database. Run `pnpm db:start && pnpm db:reset && pnpm test:db` once Docker is available, and record the results here.
+**Status on 2026-11-11, migrations 0001–0020:** `pnpm test:db` runs on an embedded PostgreSQL 17 with a minimal Supabase shim (`tests/db/harness/`), because Docker is unavailable on the development machine.
+
+- **Coverage:** 13 test files, 119 tests:
+  - security meta-tests, tenant isolation, RBAC;
+  - scheduling and booking, concurrency;
+  - workspace read functions;
+  - onboarding, membership, doctors, patients;
+  - audit adversarial checks, query plans, and the application ↔ database contract.
+- **Result:** 117 pass. The other 2 are *expected failures* that document open audit findings:
+  - SC-AUD-02, slow free-slot lookup;
+  - SC-AUD-03, suspension lifted through an invitation.
+- **Not covered by the shim:** GoTrue, PostgREST and Realtime themselves. Running the same suite with `TEST_DATABASE_URL` against the local Supabase stack remains to be done once Docker works.

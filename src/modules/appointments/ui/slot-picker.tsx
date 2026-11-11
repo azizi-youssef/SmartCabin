@@ -4,12 +4,11 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useState, useTransition } from 'react';
 
 import type { Locale } from '@/i18n/routing';
-import { formatTime } from '@/shared/lib/format';
-import { cn } from '@/shared/lib/cn';
 import type { ErrorCode } from '@/shared/lib/errors';
 import { InlineAlert, Skeleton } from '@/shared/ui/states';
 
 import { fetchSlots, type SlotOption } from '../actions';
+import { SlotRadioGroup } from './slot-radio-group';
 
 /**
  * Free slots for (doctor, service, day), computed by the database. A slot shown here can still
@@ -71,27 +70,15 @@ export function SlotPicker({
   if (!slots || slots.length === 0) return <p className="text-small text-ink-muted">{t('slotsEmpty')}</p>;
 
   return (
-    <div role="radiogroup" aria-label={t('slots')} className={cn('flex flex-wrap gap-1.5', pending && 'opacity-60')}>
-      {slots.map((slot) => {
-        const selected = value === slot.startsAt;
-        return (
-          <button
-            key={slot.startsAt}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            onClick={() => onChange(selected ? null : slot)}
-            className={cn(
-              'focus-ring h-8 min-w-16 rounded-md border px-2 text-small font-medium tabular transition-colors',
-              selected
-                ? 'border-primary bg-primary text-primary-fg'
-                : 'border-line-strong bg-surface text-ink hover:border-accent hover:bg-accent-soft',
-            )}
-          >
-            <span dir="ltr">{formatTime(locale, slot.startsAt, timeZone)}</span>
-          </button>
-        );
-      })}
-    </div>
+    <SlotRadioGroup
+      slots={slots}
+      value={value}
+      onChange={onChange}
+      label={t('slots')}
+      locale={locale}
+      timeZone={timeZone}
+      dir={locale === 'ar' ? 'rtl' : 'ltr'}
+      busy={pending}
+    />
   );
 }

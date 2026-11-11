@@ -1,4 +1,4 @@
-# SmartClinic — Domain Model
+# SmartCabin — Domain Model
 
 | | |
 | --- | --- |
@@ -583,7 +583,7 @@ classDiagram
 
 #### `auth.users` — Account (Supabase-managed)
 - **Purpose:** authentication identity for staff (email and password, TOTP MFA) and patients (phone OTP).
-- **Ownership:** Supabase Auth. SmartClinic never writes it directly, only through the Auth API.
+- **Ownership:** Supabase Auth. SmartCabin never writes it directly, only through the Auth API.
 - **Relationships:** 1:1 `user_profiles`; 1:N `clinic_members`, `patient_accounts`, `legal_acceptances`; 0..1 `platform_admins`.
 - **Lifecycle:** created at sign-up; email or phone confirmed; MFA factors enrolled; deleted on account-deletion request. Clinic records survive deletion, because clinics are the controllers of patient files. References from audit logs are kept as plain uuids without foreign keys.
 

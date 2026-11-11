@@ -1,4 +1,4 @@
-# SmartClinic documentation
+# SmartCabin documentation
 
 | Document | Content | Status |
 | --- | --- | --- |

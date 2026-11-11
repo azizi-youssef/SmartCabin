@@ -1,4 +1,4 @@
-# SmartClinic
+# SmartCabin
 
 Multi-tenant clinic management SaaS for independent doctors and private clinics in Nador, Morocco (French and Arabic).
 It is administrative software only: no diagnosis, triage or medical recommendations.

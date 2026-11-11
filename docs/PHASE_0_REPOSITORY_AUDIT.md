@@ -1,4 +1,4 @@
-# SmartClinic — Phase 0 Repository Audit
+# SmartCabin — Phase 0 Repository Audit
 
 | | |
 | --- | --- |
@@ -11,9 +11,9 @@
 
 ## 1. Executive summary
 
-1. **The SmartClinic folder is empty.** There is no source code, `package.json`, git repository, environment file, Supabase configuration or documentation. Nothing inside it needs preserving or migrating.
+1. **The SmartCabin folder is empty.** There is no source code, `package.json`, git repository, environment file, Supabase configuration or documentation. Nothing inside it needs preserving or migrating.
 2. **A sibling project, `../CLINPILOT`, is the same product on a different stack.** It is a B2B clinic SaaS for independent doctors and clinics in Nador, in French and Arabic. Its stack is FastAPI, SQLAlchemy/Alembic, self-hosted PostgreSQL with RLS, Redis, first-party auth with TOTP MFA, and a Next.js 16 front end. It stands at the end of Sprint 2. Auth, tenancy, invitations, RLS and the fr/ar shell are marked "verified" in its own status file, backed by 163 API tests, 209 web tests and 9 Playwright E2E tests. Those runs were not repeated during this audit.
-3. **The master prompt prescribes a Supabase + Next.js stack**, which replaces most of CLINPILOT's backend: Python API, own sessions/MFA/CSRF, Redis/Celery plans and Docker/Caddy infrastructure. **Decision D-0 (§6) is needed before Phase 1.** The choice is between building SmartClinic fresh on Supabase (recommended) and continuing CLINPILOT. The recommended path reuses CLINPILOT's non-code assets: decisions, regulatory checklist, translations, design tokens and test scenarios.
+3. **The master prompt prescribes a Supabase + Next.js stack**, which replaces most of CLINPILOT's backend: Python API, own sessions/MFA/CSRF, Redis/Celery plans and Docker/Caddy infrastructure. **Decision D-0 (§6) is needed before Phase 1.** The choice is between building SmartCabin fresh on Supabase (recommended) and continuing CLINPILOT. The recommended path reuses CLINPILOT's non-code assets: decisions, regulatory checklist, translations, design tokens and test scenarios.
 4. **Workstation:** Node 22.15, pnpm 12.16.1, git 2.47 and Docker 28.5 are installed. The **Supabase CLI is not installed** and the **Docker daemon was not running**. Only **1.5 GB of 15.8 GB RAM was free**, and a full local Supabase stack will strain this machine (risk R9).
 5. **Top risks:**
    - cross-tenant leakage through RLS that browsers can query directly;
@@ -30,7 +30,7 @@
 
 **Inspected (read-only)**
 
-- SmartClinic folder: full listing including hidden files; git status of the folder and its parent.
+- SmartCabin folder: full listing including hidden files; git status of the folder and its parent.
 - Toolchain: Node, npm, pnpm, yarn, git, Docker (client and daemon), Supabase CLI, psql, GitHub CLI, Vercel CLI.
 - Machine resources: RAM, disk, CPU.
 - `../CLINPILOT`, chosen because its name and content match the product:
@@ -59,7 +59,7 @@
 | Documentation | None before this audit |
 | CI/CD | None |
 
-**Consequence:** inside SmartClinic, "preserve existing work" applies to nothing. The only existing work at risk is CLINPILOT. This audit did not modify it, and no later phase should modify it unless D-0 says so.
+**Consequence:** inside SmartCabin, "preserve existing work" applies to nothing. The only existing work at risk is CLINPILOT. This audit did not modify it, and no later phase should modify it unless D-0 says so.
 
 ---
 
@@ -93,7 +93,7 @@ None of the prescribed stack is present yet. Exact versions will be pinned when 
 
 ## 5. Current implementation status
 
-### 5.1 SmartClinic
+### 5.1 SmartCabin
 
 Nothing is implemented. All 16 modules are **not started**.
 
@@ -101,7 +101,7 @@ Nothing is implemented. All 16 modules are **not started**.
 
 Statuses below are quoted from CLINPILOT's own `IMPLEMENTATION_STATUS.md` (last updated 2026-11-05) and were not re-verified.
 
-| Area | CLINPILOT status | Reusable in SmartClinic (Supabase stack)? |
+| Area | CLINPILOT status | Reusable in SmartCabin (Supabase stack)? |
 | --- | --- | --- |
 | Product requirements and accepted decisions D1–D10 | Documented | **Yes.** Port after review: overbooking flag (D10), no marketplace (D6), manual MAD invoicing (D7), hosting decision pending (D1) |
 | Law 09-08 / CNDP checklist; notification content rules | Documented | **Yes**, almost unchanged |
@@ -115,12 +115,12 @@ Statuses below are quoted from CLINPILOT's own `IMPLEMENTATION_STATUS.md` (last 
 
 ---
 
-## 6. Decision D-0 — SmartClinic and CLINPILOT
+## 6. Decision D-0 — SmartCabin and CLINPILOT
 
 | Option | For | Against |
 | --- | --- | --- |
 | **A. Fresh build on the prescribed Supabase stack** (CLINPILOT frozen as reference) | Matches the master prompt. One language (TypeScript). Managed Auth/MFA, Realtime, Storage, backups and queues mean far less to operate: no Redis, Celery, Caddy or Python runtime. Short path to Vercel. | Discards about two sprints of verified backend work. RLS becomes the only barrier for direct browser queries, so policy quality is critical. Hosting is limited to Supabase regions, none of them in Morocco. |
-| **B. Continue CLINPILOT under the SmartClinic name** | Keeps verified work. Full hosting control, including hosting in Morocco if the law requires it. | Contradicts the prompt's stack. More infrastructure for a small team to run. Two languages to maintain. |
+| **B. Continue CLINPILOT under the SmartCabin name** | Keeps verified work. Full hosting control, including hosting in Morocco if the law requires it. | Contradicts the prompt's stack. More infrastructure for a small team to run. Two languages to maintain. |
 | C. Hybrid: Supabase Postgres + keep FastAPI | — | Pays the cost of both stacks and loses the Supabase Auth ↔ RLS integration. **Not recommended.** |
 
 **Recommendation: Option A**, provided the Supabase stack in the master prompt is a deliberate choice. Port the reusable assets listed in §5.2.
@@ -407,8 +407,8 @@ Each row has a recommended default. Phase 1 proceeds with these defaults unless 
 
 | # | Question | Recommended default |
 | --- | --- | --- |
-| D-0 | SmartClinic vs CLINPILOT (§6) | **Option A**: fresh Supabase build; CLINPILOT as reference |
-| A1 | Product name and domains | "SmartClinic". Domains to be confirmed |
+| D-0 | SmartCabin vs CLINPILOT (§6) | **Option A**: fresh Supabase build; CLINPILOT as reference |
+| A1 | Product name and domains | "SmartCabin". Domains to be confirmed |
 | A2 | `users` table vs Supabase `auth.users` | `auth.users` + `public.user_profiles`; no `public.users` |
 | A3 | An owner who is also the clinic's doctor | Role `CLINIC_OWNER` + linked `doctors` row; one role per membership |
 | A4 | A doctor working in several clinics | One `doctors` row per clinic, owned by that clinic, joined by the optional `user_id` |

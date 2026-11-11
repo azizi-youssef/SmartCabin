@@ -1,4 +1,4 @@
-# SmartClinic — Security Model: Tenant Isolation
+# SmartCabin — Security Model: Tenant Isolation
 
 | | |
 | --- | --- |
@@ -6,7 +6,7 @@
 | Date | 2026-11-10 |
 | Related | [RBAC_PERMISSION_MATRIX.md](RBAC_PERMISSION_MATRIX.md) · [PHASE_0_REPOSITORY_AUDIT.md](PHASE_0_REPOSITORY_AUDIT.md) §10 (controls S1–S15) |
 
-**Threat assumption.** Every signed-in user, patient or staff, can call the Supabase Data API, Realtime and Storage directly with their own JWT, bypassing the SmartClinic UI. Isolation must therefore hold **inside PostgreSQL**, whatever request reaches it.
+**Threat assumption.** Every signed-in user, patient or staff, can call the Supabase Data API, Realtime and Storage directly with their own JWT, bypassing the SmartCabin UI. Isolation must therefore hold **inside PostgreSQL**, whatever request reaches it.
 
 ---
 

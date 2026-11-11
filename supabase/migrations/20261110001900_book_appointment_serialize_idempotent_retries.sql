@@ -1,4 +1,4 @@
--- SmartClinic 0019 — Fix: deadlock between concurrent retries of one booking.
+-- SmartCabin 0019 — Fix: deadlock between concurrent retries of one booking.
 --
 -- tests/db/concurrency.test.ts intermittently failed with 40P01 (deadlock detected): retries with
 -- the same idempotency key wait on each other through two different indexes (unique key and
@@ -70,7 +70,7 @@ begin
   from private.effective_service(v_clinic_id, p_doctor_id, p_service_id, false) e;
   perform private.assert_slot_bookable(v_clinic_id, p_doctor_id, p_starts_at, p_starts_at + make_interval(mins => v_duration));
 
-  perform set_config('smartclinic.change_reason', coalesce(nullif(btrim(p_overbook_reason), ''), ''), true);
+  perform set_config('smartcabin.change_reason', coalesce(nullif(btrim(p_overbook_reason), ''), ''), true);
   begin
     insert into public.appointments (
       clinic_id, patient_id, doctor_id, service_id, starts_at, ends_at, status, source,

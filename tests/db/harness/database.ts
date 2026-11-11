@@ -50,7 +50,7 @@ export async function migrate(url: string, log: (line: string) => void = () => u
  * directory, start, create the database, migrate, seed. Deleted on stop.
  */
 export async function startEmbeddedDatabase(port = 55432, log: (line: string) => void = () => undefined): Promise<TestDatabase> {
-  const dir = mkdtempSync(join(tmpdir(), 'smartclinic-pg-'));
+  const dir = mkdtempSync(join(tmpdir(), 'smartcabin-pg-'));
   const server = new EmbeddedPostgres({
     databaseDir: dir,
     user: 'postgres',
@@ -64,8 +64,8 @@ export async function startEmbeddedDatabase(port = 55432, log: (line: string) =>
   });
   await server.initialise();
   await server.start();
-  await server.createDatabase('smartclinic_test');
-  const url = `postgresql://postgres:postgres@127.0.0.1:${port}/smartclinic_test`;
+  await server.createDatabase('smartcabin_test');
+  const url = `postgresql://postgres:postgres@127.0.0.1:${port}/smartcabin_test`;
   await migrate(url, log);
   return {
     url,

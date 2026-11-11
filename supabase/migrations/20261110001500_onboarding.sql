@@ -1,4 +1,4 @@
--- SmartClinic 0015 — Module 1: clinic onboarding.
+-- SmartCabin 0015 — Module 1: clinic onboarding.
 -- 1. create_clinic now requires the current terms of service and privacy policy to have been
 --    accepted by the caller (MD-20; enforced in the database, not only in the form).
 -- 2. is_slug_available: availability check for the onboarding form (slugs are public URLs).

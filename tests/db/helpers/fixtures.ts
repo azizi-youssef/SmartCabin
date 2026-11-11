@@ -184,6 +184,14 @@ export async function createWorld(db: Db): Promise<World> {
     [clinicA, clinicB, day],
   );
 
+  // A doctor's day in clinic A with one session-level event, so isolation checks on the queue
+  // tables have rows to hide (queue entries need checked-in appointments: see reception tests).
+  await db.query(
+    `with s as (insert into public.doctor_sessions (clinic_id, doctor_id, service_date) values ($1, $2, $3::date) returning id)
+     insert into public.queue_events (clinic_id, session_id, event_type, details) select $1, s.id, 'delay_reported', '{}' from s`,
+    [clinicA, doctorA1, day],
+  );
+
   return {
     day, clinicA, clinicB, users, doctorA1, doctorA2, doctorB1, serviceA, serviceA2, serviceB,
     patientA1, patientA2, patientB1, apptA1, apptA2, apptB1,
@@ -224,7 +232,7 @@ export const TENANT_TABLES = [
   'clinics', 'clinic_settings', 'clinic_members', 'clinic_invitations', 'clinic_closures',
   'services', 'doctors', 'doctor_services', 'doctor_schedules', 'doctor_availability', 'doctor_time_off',
   'patients', 'patient_accounts', 'patient_consents', 'appointments', 'appointment_history',
-  'audit_logs', 'domain_events',
+  'audit_logs', 'domain_events', 'doctor_sessions', 'queue_entries', 'queue_events',
 ] as const;
 
 export function tenantColumn(table: (typeof TENANT_TABLES)[number]): string {

@@ -1,9 +1,9 @@
 {
-  "name": "smartclinic",
+  "name": "smartcabin",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "SmartClinic — multi-tenant clinic management SaaS (Nador, Morocco)",
+  "description": "SmartCabin — multi-tenant clinic management SaaS (Nador, Morocco)",
   "engines": {
     "node": ">=22"
   },

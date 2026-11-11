@@ -1,4 +1,4 @@
--- SmartClinic 0005 — Patients (BC5): clinic-scoped records, portal links, consents.
+-- SmartCabin 0005 — Patients (BC5): clinic-scoped records, portal links, consents.
 -- Administrative data only: no clinical content in the MVP (BR-D-01).
 
 -- ---------------------------------------------------------------------------

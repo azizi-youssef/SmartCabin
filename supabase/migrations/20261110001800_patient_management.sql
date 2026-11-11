@@ -1,4 +1,4 @@
--- SmartClinic 0018 — Module 4: patient management.
+-- SmartCabin 0018 — Module 4: patient management.
 -- register_patient   : record + consents in ONE transaction (fixes the two-write gap of Phase 4).
 -- get_patient        : detail view, writes `patient.viewed` to the audit log (BR-D-03).
 -- set_patient_archived, merge_patients, list_patient_duplicates.

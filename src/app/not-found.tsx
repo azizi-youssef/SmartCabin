@@ -10,7 +10,7 @@ export default function GlobalNotFound() {
         <main className="grid max-w-md gap-2 text-center">
           <h1 className="text-title">Page introuvable · الصفحة غير موجودة</h1>
           <Link className="text-accent underline" href="/fr">
-            SmartClinic
+            SmartCabin
           </Link>
         </main>
       </body>

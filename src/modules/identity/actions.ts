@@ -104,7 +104,7 @@ export async function startTotpEnrollment(): Promise<ActionResult<TotpEnrollment
   for (const factor of factors.data?.all ?? []) {
     if (factor.factor_type === 'totp' && factor.status === 'unverified') await supabase.auth.mfa.unenroll({ factorId: factor.id });
   }
-  const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: `SmartClinic ${new Date().toISOString().slice(0, 10)}` });
+  const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: `SmartCabin ${new Date().toISOString().slice(0, 10)}` });
   if (error || !data) return { ok: false, code: toErrorCode(error) };
   return { ok: true, data: { factorId: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret } };
 }

@@ -1,4 +1,4 @@
--- SmartClinic 0002 — Identity & Access and Tenancy tables (BC1, BC2).
+-- SmartCabin 0002 — Identity & Access and Tenancy tables (BC1, BC2).
 -- Policies and grants are in 0009; command functions in 0011.
 
 -- ---------------------------------------------------------------------------

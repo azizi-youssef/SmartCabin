@@ -5,6 +5,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { APPOINTMENT_STATUSES, type AppointmentStatus } from '@/modules/appointments/domain/status';
+import { BookingDialog } from '@/modules/appointments/ui/booking-dialog';
 import { AppointmentStatusBadge } from '@/modules/appointments/ui/status-badge';
 import { doctorDisplayName, localizedName } from '@/modules/catalog/names';
 import { loadCatalog } from '@/modules/catalog/queries';
@@ -14,6 +15,7 @@ import { ArchiveButton, ConsentToggle, EditPatientDialog, MergeButton } from '@/
 import { can, loadWorkspace } from '@/modules/tenancy/workspace';
 import { formatDateTime, formatLocalDay, formatShortDate } from '@/shared/lib/format';
 import { formatPhone } from '@/shared/lib/phone';
+import { today } from '@/shared/lib/time';
 import { Badge } from '@/shared/ui/badge';
 import { DataTable, type Column } from '@/shared/ui/data-table';
 import { DetailList, PageHeader, Section } from '@/shared/ui/layout';
@@ -66,7 +68,12 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
   const statusTone = { active: 'success', archived: 'neutral', merged: 'warning' } as const;
 
   const appointmentColumns: Column<PatientAppointment>[] = [
-    { id: 'when', header: t('columns.when'), className: 'w-44', cell: (a) => <time dateTime={a.startsAt} className="tabular">{formatDateTime(locale, a.startsAt, tz)}</time> },
+    { id: 'when', header: t('columns.when'), className: 'w-44', cell: (a) => (
+        <Link href={`/w/${ws.clinic.slug}/appointments/${a.id}`} className="focus-ring rounded-sm text-accent hover:underline">
+          <time dateTime={a.startsAt} className="tabular">{formatDateTime(locale, a.startsAt, tz)}</time>
+          <span className="sr-only"> — {t('appointment.open')}</span>
+        </Link>
+      ) },
     { id: 'doctor', header: t('columns.doctor'), hideBelow: 'md', cell: (a) => doctors.get(a.doctorId) ?? '—' },
     { id: 'service', header: t('columns.service'), hideBelow: 'lg', cell: (a) => services.get(a.serviceId) ?? '—' },
     {
@@ -95,6 +102,22 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
         actions={
           editable ? (
             <>
+              {can(ws, 'appointments.book') && p.status === 'active' && catalog.status === 'ok' ? (
+                <BookingDialog
+                  slug={ws.clinic.slug}
+                  timeZone={tz}
+                  defaultDay={today(tz)}
+                  canOverbook={can(ws, 'appointments.overbook')}
+                  initialPatient={{ id: p.id, label: name, fileNumber: p.fileNumber }}
+                  catalog={{
+                    doctors: catalog.data.doctors
+                      .filter((d) => d.active && (ws.role !== 'doctor' || d.userId === ws.session.userId))
+                      .map((d) => ({ id: d.id, name: doctorDisplayName(locale, d.fullName, d.fullNameAr) })),
+                    services: catalog.data.services.filter((s) => s.active).map((s) => ({ id: s.id, name: localizedName(locale, s.nameFr, s.nameAr) })),
+                    offerings: catalog.data.offerings.filter((o) => o.active),
+                  }}
+                />
+              ) : null}
               {can(ws, 'patients.update') && p.status === 'active' ? (
                 <EditPatientDialog
                   patientId={p.id}

@@ -1,4 +1,4 @@
--- SmartClinic 0017 — Module 3: doctor management.
+-- SmartCabin 0017 — Module 3: doctor management.
 -- set_doctor_services replaces a doctor's offered services in ONE transaction (API_SPECIFICATION
 -- BC3). Rows already referenced by appointments are never deleted: unselected services are
 -- deactivated instead. Overrides must respect the service bounds.

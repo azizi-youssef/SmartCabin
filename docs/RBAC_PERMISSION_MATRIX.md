@@ -1,4 +1,4 @@
-# SmartClinic — Role and Permission Matrix
+# SmartCabin — Role and Permission Matrix
 
 | | |
 | --- | --- |

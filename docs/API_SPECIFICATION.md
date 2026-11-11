@@ -1,4 +1,4 @@
-# SmartClinic — API Domain Boundaries
+# SmartCabin — API Domain Boundaries
 
 | | |
 | --- | --- |
@@ -12,8 +12,8 @@
 
 | Surface | Callers | Authentication | Used for |
 | --- | --- | --- | --- |
-| **Server Actions** (per module) | The SmartClinic UI only | Session cookie. **Every action authenticates and authorizes itself**, because Server Actions are public POST endpoints | All UI mutations |
-| **Server Components** (reads) | The SmartClinic UI | Session cookie → user-scoped client | All UI reads |
+| **Server Actions** (per module) | The SmartCabin UI only | Session cookie. **Every action authenticates and authorizes itself**, because Server Actions are public POST endpoints | All UI mutations |
+| **Server Components** (reads) | The SmartCabin UI | Session cookie → user-scoped client | All UI reads |
 | **PostgreSQL functions** (through the Data API) | Server code (user-scoped or privileged client) | User JWT or service role | The domain command and query layer. It is the real boundary |
 | **Route Handlers** `/api/...` | Non-UI callers only | Per route (below) | Jobs, webhooks, display screens, files, health |
 

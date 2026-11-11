@@ -1,4 +1,4 @@
-# SmartClinic — Database Entity Relationship Diagrams
+# SmartCabin — Database Entity Relationship Diagrams
 
 | | |
 | --- | --- |

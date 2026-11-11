@@ -2,7 +2,7 @@
 # https://supabase.com/docs/guides/local-development/cli/config
 # A string used to distinguish different Supabase projects on the same host. Defaults to the
 # working directory name when running `supabase init`.
-project_id = "smartclinic"
+project_id = "smartcabin"
 
 [api]
 enabled = true
@@ -10,7 +10,7 @@ enabled = true
 port = 54321
 # Schemas to expose in your API. Tables, views and stored procedures in this schema will get API
 # endpoints. `public` and `graphql_public` schemas are included by default.
-# SmartClinic: only `public` is exposed. Helpers live in `private`, which is never exposed.
+# SmartCabin: only `public` is exposed. Helpers live in `private`, which is never exposed.
 schemas = ["public"]
 # Extra schemas to add to the search_path of every request.
 extra_search_path = ["public", "extensions"]
@@ -21,7 +21,7 @@ max_rows = 1000
 # `postgres` are reachable through the Data API roles (`anon`, `authenticated`, `service_role`)
 # without explicit GRANTs, matching the cloud default. Set to `false` to require explicit GRANTs
 # instead. Left unset, a fresh project falls back to `true`.
-# SmartClinic: every grant is explicit in the migrations (secure by default).
+# SmartCabin: every grant is explicit in the migrations (secure by default).
 auto_expose_new_tables = false
 
 [api.tls]

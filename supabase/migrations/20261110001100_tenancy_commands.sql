@@ -1,4 +1,4 @@
--- SmartClinic 0011 — Tenancy and membership commands (BC1, BC2).
+-- SmartCabin 0011 — Tenancy and membership commands (BC1, BC2).
 -- Every function: SECURITY DEFINER, empty search_path, explicit authorization first,
 -- tenant derived server-side, EXECUTE granted to `authenticated` only.
 
@@ -290,7 +290,7 @@ declare
   v_old public.clinic_status;
 begin
   perform private.require_platform_admin();
-  perform set_config('smartclinic.actor_type', 'platform_admin', true);
+  perform set_config('smartcabin.actor_type', 'platform_admin', true);
 
   select c.status into v_old from public.clinics c where c.id = p_clinic_id for update;
   if not found then

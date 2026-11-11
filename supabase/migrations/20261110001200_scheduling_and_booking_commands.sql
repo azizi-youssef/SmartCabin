@@ -1,4 +1,4 @@
--- SmartClinic 0012 — Slot computation and staff appointment commands (BC4, BC6).
+-- SmartCabin 0012 — Slot computation and staff appointment commands (BC4, BC6).
 -- Concurrency: the exclusion constraint appointments_no_overlap is the final arbiter;
 -- idempotency keys are unique per clinic. Both hold across concurrent transactions.
 
@@ -243,7 +243,7 @@ begin
   from private.effective_service(v_clinic_id, p_doctor_id, p_service_id, false) e;
   perform private.assert_slot_bookable(v_clinic_id, p_doctor_id, p_starts_at, p_starts_at + make_interval(mins => v_duration));
 
-  perform set_config('smartclinic.change_reason', coalesce(nullif(btrim(p_overbook_reason), ''), ''), true);
+  perform set_config('smartcabin.change_reason', coalesce(nullif(btrim(p_overbook_reason), ''), ''), true);
   begin
     insert into public.appointments (
       clinic_id, patient_id, doctor_id, service_id, starts_at, ends_at, status, source,
@@ -288,7 +288,7 @@ begin
   if v_appt.status <> 'pending' then
     raise exception using errcode = 'P0001', message = 'APPT_INVALID_TRANSITION';
   end if;
-  perform set_config('smartclinic.change_reason', '', true);
+  perform set_config('smartcabin.change_reason', '', true);
   update public.appointments set status = 'confirmed', confirmed_at = now()
   where id = p_appointment_id returning * into v_appt;
   perform private.emit_event(v_appt.clinic_id, 'appointment', v_appt.id, 'appointment.confirmed');
@@ -320,7 +320,7 @@ begin
   if p_reason is null or p_reason in ('left_before_consultation', 'not_confirmed_in_time') then
     raise exception using errcode = 'P0001', message = 'VALIDATION_FAILED', detail = 'invalid cancellation reason';
   end if;
-  perform set_config('smartclinic.change_reason', coalesce(left(btrim(p_note), 300), ''), true);
+  perform set_config('smartcabin.change_reason', coalesce(left(btrim(p_note), 300), ''), true);
   update public.appointments
      set status = 'cancelled', cancelled_at = now(), cancelled_by_user_id = auth.uid(),
          cancellation_actor = 'clinic', cancellation_reason = p_reason
@@ -358,7 +358,7 @@ begin
   from private.effective_service(v_appt.clinic_id, v_appt.doctor_id, v_appt.service_id, false) e;
   perform private.assert_slot_bookable(v_appt.clinic_id, v_appt.doctor_id, p_new_starts_at,
                                        p_new_starts_at + make_interval(mins => v_duration));
-  perform set_config('smartclinic.change_reason', '', true);
+  perform set_config('smartcabin.change_reason', '', true);
   begin
     -- A rescheduled appointment takes a normal slot: the overbooking flag does not carry over.
     update public.appointments
@@ -395,7 +395,7 @@ begin
   if now() < v_appt.starts_at + make_interval(mins => coalesce(v_grace, 15)) then
     raise exception using errcode = 'P0001', message = 'NO_SHOW_TOO_EARLY';
   end if;
-  perform set_config('smartclinic.change_reason', '', true);
+  perform set_config('smartcabin.change_reason', '', true);
   update public.appointments set status = 'no_show', no_show_at = now()
   where id = p_appointment_id returning * into v_appt;
   perform private.emit_event(v_appt.clinic_id, 'appointment', v_appt.id, 'appointment.no_show');
