@@ -1,0 +1,216 @@
+@import "tailwindcss";
+
+/* =============================================================================
+   SmartClinic design tokens — docs/UI_UX_GUIDELINES.md
+   Raw palette (--sc-*) → semantic tokens → Tailwind theme (@theme inline).
+   Components use semantic utilities only (bg-surface, text-ink-muted, border-line…),
+   never raw hex values, so the palette can change in one place.
+   ============================================================================= */
+
+:root {
+  /* Navy — structure (navigation, primary actions, headings) */
+  --sc-navy-950: #0b1b2b;
+  --sc-navy-900: #10283b;
+  --sc-navy-800: #183a52;
+  --sc-navy-700: #234c68;
+  --sc-navy-600: #34627f;
+
+  /* Cool neutrals — surfaces, borders, text */
+  --sc-neutral-0: #ffffff;
+  --sc-neutral-25: #fbfcfd;
+  --sc-neutral-50: #f5f7f9;
+  --sc-neutral-100: #eef1f4;
+  --sc-neutral-200: #e1e6eb;
+  --sc-neutral-300: #cbd3db;
+  --sc-neutral-400: #98a5b2;
+  --sc-neutral-500: #687684;
+  --sc-neutral-600: #4d5966;
+  --sc-neutral-700: #374350;
+  --sc-neutral-800: #243039;
+  --sc-neutral-900: #141c24;
+
+  /* Muted medical teal — accent (focus, selection, positive emphasis) */
+  --sc-teal-50: #eef7f6;
+  --sc-teal-100: #d6ece9;
+  --sc-teal-200: #acd8d2;
+  --sc-teal-500: #2f8f86;
+  --sc-teal-600: #23766f;
+  --sc-teal-700: #1b5d57;
+
+  /* ---------------------------------------------------------------- semantic */
+  --sc-canvas: var(--sc-neutral-50);
+  --sc-surface: var(--sc-neutral-0);
+  --sc-surface-muted: var(--sc-neutral-25);
+  --sc-surface-sunken: var(--sc-neutral-100);
+  --sc-line: var(--sc-neutral-200);
+  --sc-line-strong: var(--sc-neutral-300);
+
+  --sc-ink: var(--sc-neutral-900);
+  --sc-ink-muted: var(--sc-neutral-600);
+  --sc-ink-subtle: var(--sc-neutral-500);
+  --sc-ink-inverse: var(--sc-neutral-0);
+
+  --sc-primary: var(--sc-navy-900);
+  --sc-primary-hover: var(--sc-navy-800);
+  --sc-primary-fg: var(--sc-neutral-0);
+
+  --sc-accent: var(--sc-teal-600);
+  --sc-accent-hover: var(--sc-teal-700);
+  --sc-accent-soft: var(--sc-teal-50);
+  --sc-accent-line: var(--sc-teal-200);
+  --sc-focus: var(--sc-teal-500);
+
+  /* Navigation rail */
+  --sc-nav: var(--sc-navy-900);
+  --sc-nav-hover: var(--sc-navy-800);
+  --sc-nav-active: var(--sc-navy-800);
+  --sc-nav-ink: #c6d1db;
+  --sc-nav-ink-active: var(--sc-neutral-0);
+  --sc-nav-line: #1f3a50;
+
+  /* Status (text / background / border) — all text pairs ≥ 4.5:1 on their background */
+  --sc-success: #17663f;
+  --sc-success-bg: #eaf6ef;
+  --sc-success-line: #b6dfc6;
+  --sc-warning: #8a4f00;
+  --sc-warning-bg: #fdf4e3;
+  --sc-warning-line: #efcd92;
+  --sc-danger: #a61f29;
+  --sc-danger-bg: #fcedee;
+  --sc-danger-line: #f1c0c4;
+  --sc-info: #1b578f;
+  --sc-info-bg: #ebf2fa;
+  --sc-info-line: #bcd3ec;
+  --sc-neutral-status: var(--sc-neutral-700);
+  --sc-neutral-status-bg: var(--sc-neutral-100);
+  --sc-neutral-status-line: var(--sc-neutral-300);
+
+  --sc-overlay: rgb(11 27 43 / 0.45);
+
+  /* Elevation — borders first; shadows only for floating layers */
+  --sc-shadow-popover: 0 10px 28px -12px rgb(11 27 43 / 0.22), 0 2px 6px -2px rgb(11 27 43 / 0.08);
+  --sc-shadow-dialog: 0 24px 64px -24px rgb(11 27 43 / 0.35), 0 4px 12px -4px rgb(11 27 43 / 0.1);
+}
+
+@theme inline {
+  --font-sans: var(--font-plex), var(--font-plex-arabic), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  /* Type scale: size / line-height / weight. Dense but readable operational UI. */
+  --text-display: 1.5rem;
+  --text-display--line-height: 2rem;
+  --text-display--font-weight: 600;
+  --text-title: 1.25rem;
+  --text-title--line-height: 1.75rem;
+  --text-title--font-weight: 600;
+  --text-heading: 1rem;
+  --text-heading--line-height: 1.5rem;
+  --text-heading--font-weight: 600;
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.25rem;
+  --text-small: 0.8125rem;
+  --text-small--line-height: 1.125rem;
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1rem;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  --shadow-popover: var(--sc-shadow-popover);
+  --shadow-dialog: var(--sc-shadow-dialog);
+
+  --color-canvas: var(--sc-canvas);
+  --color-surface: var(--sc-surface);
+  --color-surface-muted: var(--sc-surface-muted);
+  --color-surface-sunken: var(--sc-surface-sunken);
+  --color-line: var(--sc-line);
+  --color-line-strong: var(--sc-line-strong);
+  --color-ink: var(--sc-ink);
+  --color-ink-muted: var(--sc-ink-muted);
+  --color-ink-subtle: var(--sc-ink-subtle);
+  --color-ink-inverse: var(--sc-ink-inverse);
+  --color-primary: var(--sc-primary);
+  --color-primary-hover: var(--sc-primary-hover);
+  --color-primary-fg: var(--sc-primary-fg);
+  --color-accent: var(--sc-accent);
+  --color-accent-hover: var(--sc-accent-hover);
+  --color-accent-soft: var(--sc-accent-soft);
+  --color-accent-line: var(--sc-accent-line);
+  --color-focus: var(--sc-focus);
+  --color-nav: var(--sc-nav);
+  --color-nav-hover: var(--sc-nav-hover);
+  --color-nav-active: var(--sc-nav-active);
+  --color-nav-ink: var(--sc-nav-ink);
+  --color-nav-ink-active: var(--sc-nav-ink-active);
+  --color-nav-line: var(--sc-nav-line);
+  --color-success: var(--sc-success);
+  --color-success-bg: var(--sc-success-bg);
+  --color-success-line: var(--sc-success-line);
+  --color-warning: var(--sc-warning);
+  --color-warning-bg: var(--sc-warning-bg);
+  --color-warning-line: var(--sc-warning-line);
+  --color-danger: var(--sc-danger);
+  --color-danger-bg: var(--sc-danger-bg);
+  --color-danger-line: var(--sc-danger-line);
+  --color-info: var(--sc-info);
+  --color-info-bg: var(--sc-info-bg);
+  --color-info-line: var(--sc-info-line);
+  --color-neutral-status: var(--sc-neutral-status);
+  --color-neutral-status-bg: var(--sc-neutral-status-bg);
+  --color-neutral-status-line: var(--sc-neutral-status-line);
+  --color-overlay: var(--sc-overlay);
+}
+
+/* Single focus treatment for every interactive element. */
+@utility focus-ring {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  &:focus-visible {
+    outline-color: var(--sc-focus);
+  }
+}
+
+/* Mirrors directional icons (arrows, chevrons) in right-to-left layouts. */
+@utility flip-rtl {
+  &:where([dir="rtl"], [dir="rtl"] *) {
+    transform: scaleX(-1);
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background: var(--sc-canvas);
+    color: var(--sc-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Arabic script needs more vertical room than Latin at the same size. */
+  :lang(ar) body,
+  [lang="ar"] {
+    line-height: 1.6;
+  }
+  ::selection {
+    background: var(--sc-teal-100);
+    color: var(--sc-ink);
+  }
+  /* Times, durations, amounts and file numbers align in columns. */
+  time,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

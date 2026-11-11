@@ -1,0 +1,11 @@
+# pnpm blocks dependency install scripts by default; every exception is explicit.
+allowBuilds:
+  # Official Supabase CLI package: downloads its platform binary in postinstall.
+  supabase: true
+  # Embedded PostgreSQL binaries for database tests without Docker. Reviewed: the postinstall
+  # only re-creates local symlinks listed in native/pg-symlinks.json (no network access).
+  '@embedded-postgres/windows-x64': true
+  # Pulled in by next-intl's message-extraction tooling (unused here); they ship
+  # prebuilt platform binaries, so their install scripts are intentionally not run.
+  '@parcel/watcher': false
+  '@swc/core': false

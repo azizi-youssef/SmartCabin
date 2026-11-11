@@ -1,0 +1,28 @@
+node_modules/
+.pnpm-store/
+
+# Environment files: never commit real values
+.env
+.env.*
+!.env.example
+
+# Supabase CLI local state
+supabase/.branches/
+supabase/.temp/
+
+# Next.js build output and generated types
+.next/
+out/
+next-env.d.ts
+
+# Test and build output
+coverage/
+*.tsbuildinfo
+.vitest/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
