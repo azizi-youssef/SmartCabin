@@ -38,7 +38,10 @@ export interface Workspace {
   clinic: { id: string; slug: string; displayName: string; city: string; timezone: string; status: ClinicStatus };
   role: ClinicRole;
   isPractitioner: boolean;
+  /** Effective permissions now (MFA, clinic status, subscription), from get_my_clinic_access. */
   permissions: ReadonlySet<string>;
+  /** Why writes are refused right now, if they are (BR-P-01 for an expired subscription). */
+  readOnlyReason: 'suspended' | 'closed' | 'subscription_expired' | null;
   memberships: Membership[];
 }
 
@@ -116,7 +119,7 @@ export const loadWorkspace = cache(async (slug: string): Promise<WorkspaceResult
   if (!supabase) return { status: 'unavailable' };
   const [clinic, permissions] = await Promise.all([
     supabase.from('clinics').select('id, slug, display_name, city, timezone, status').eq('id', membership.clinicId).maybeSingle(),
-    supabase.from('role_permissions').select('permission_key').eq('role', membership.role),
+    supabase.rpc('get_my_clinic_access', { p_clinic_id: membership.clinicId }),
   ]);
   if (clinic.error || permissions.error) {
     const code = toErrorCode(clinic.error ?? permissions.error);
@@ -125,7 +128,11 @@ export const loadWorkspace = cache(async (slug: string): Promise<WorkspaceResult
   const row = clinicSchema.nullable().safeParse(clinic.data);
   if (!row.success) return { status: 'error', code: 'INTERNAL' };
   if (!row.data) return { status: 'not_found' };
-  const keys = z.array(z.object({ permission_key: z.string() })).safeParse(permissions.data);
+  const access = z.array(z.object({
+    permissions: z.array(z.string()),
+    read_only_reason: z.enum(['suspended', 'closed', 'subscription_expired']).nullable(),
+  })).safeParse(permissions.data);
+  const effective = access.success ? access.data[0] : undefined;
 
   return {
     status: 'ok',
@@ -141,7 +148,8 @@ export const loadWorkspace = cache(async (slug: string): Promise<WorkspaceResult
       },
       role: membership.role,
       isPractitioner: membership.isPractitioner,
-      permissions: new Set(keys.success ? keys.data.map((k) => k.permission_key) : []),
+      permissions: new Set(effective?.permissions ?? []),
+      readOnlyReason: effective?.read_only_reason ?? null,
       memberships: result.memberships,
     },
   };

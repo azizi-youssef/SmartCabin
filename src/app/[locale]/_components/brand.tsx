@@ -1,19 +1,40 @@
+import Image from 'next/image';
+
 import { cn } from '@/shared/lib/cn';
 
 /**
- * Wordmark: a plain medical cross in a rounded square + name. Text, not an image,
- * so it stays crisp and correct in both directions.
+ * Wordmark: Official SmartCabin logo (`Logo_SmartCabin.png`).
+ * Rendered with next/image for crisp display and performance.
+ * On inverse (dark) backgrounds (e.g. the navy workspace rail),
+ * a subtle light pill ensures legibility and contrast.
  */
-export function Brand({ inverse = false, className }: { inverse?: boolean; className?: string }) {
+export function Brand({
+  inverse = false,
+  className,
+  imageClassName,
+}: {
+  inverse?: boolean;
+  className?: string;
+  imageClassName?: string;
+}) {
   return (
     <span className={cn('inline-flex items-center gap-2', className)}>
-      <svg aria-hidden viewBox="0 0 24 24" className="size-6 shrink-0">
-        <rect width="24" height="24" rx="6" fill={inverse ? 'var(--sc-teal-500)' : 'var(--sc-navy-900)'} />
-        <path d="M10 6h4v4h4v4h-4v4h-4v-4H6v-4h4z" fill="#fff" />
-      </svg>
-      <span dir="ltr" className={cn('text-heading font-semibold tracking-tight', inverse ? 'text-white' : 'text-ink')}>
-        SmartCabin
+      <span
+        className={cn(
+          'inline-flex items-center justify-center overflow-hidden rounded-md transition-colors',
+          inverse && 'bg-white/95 px-2 py-0.5 shadow-xs',
+        )}
+      >
+        <Image
+          src="/Logo_SmartCabin.png"
+          alt="SmartCabin"
+          width={1536}
+          height={1024}
+          priority
+          className={cn('h-9 w-auto object-contain', imageClassName)}
+        />
       </span>
+      <span className="sr-only">SmartCabin</span>
     </span>
   );
 }

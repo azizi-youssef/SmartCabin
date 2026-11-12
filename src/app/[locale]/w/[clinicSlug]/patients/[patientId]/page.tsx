@@ -7,6 +7,7 @@ import type { Locale } from '@/i18n/routing';
 import { APPOINTMENT_STATUSES, type AppointmentStatus } from '@/modules/appointments/domain/status';
 import { BookingDialog } from '@/modules/appointments/ui/booking-dialog';
 import { AppointmentStatusBadge } from '@/modules/appointments/ui/status-badge';
+import { NewInvoiceButton } from '@/modules/billing/ui/invoice-actions';
 import { doctorDisplayName, localizedName } from '@/modules/catalog/names';
 import { loadCatalog } from '@/modules/catalog/queries';
 import { loadConsents, loadDuplicates, loadMergedSources, loadPatient, loadPatientAppointments, type PatientAppointment } from '@/modules/patients/queries';
@@ -118,6 +119,7 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
                   }}
                 />
               ) : null}
+              {can(ws, 'invoices.create') ? <NewInvoiceButton slug={ws.clinic.slug} patientId={p.id} label={t('billing.newInvoice')} /> : null}
               {can(ws, 'patients.update') && p.status === 'active' ? (
                 <EditPatientDialog
                   patientId={p.id}

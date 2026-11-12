@@ -1,18 +1,22 @@
 'use client';
 
 import {
+  BarChart3,
   Building2,
   CalendarClock,
   CalendarDays,
   ClipboardList,
+  CreditCard,
   LayoutDashboard,
   ListChecks,
   Menu,
   Palette,
+  ReceiptText,
   Settings,
   Stethoscope,
   UserCog,
   Users,
+  Wallet,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -34,6 +38,11 @@ const ICONS = {
   settings: Settings,
   services: ListChecks,
   schedules: CalendarClock,
+  billing: ReceiptText,
+  revenue: Wallet,
+  analytics: BarChart3,
+  subscription: CreditCard,
+  plans: CreditCard,
 } satisfies Record<string, LucideIcon>;
 
 export type NavIcon = keyof typeof ICONS;

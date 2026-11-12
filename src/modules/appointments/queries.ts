@@ -20,6 +20,8 @@ export interface DayAppointment {
   doctorId: string;
   serviceId: string;
   priceMad: string;
+  /** Set for cancelled appointments (K3/K4: "left before consultation" is counted apart). */
+  cancellationReason?: string | null;
   /** Null when RLS hides the patient from the caller (e.g. not the caller's patient). */
   patient: { id: string; firstName: string; lastName: string; fileNumber: string; phone: string | null } | null;
 }
@@ -35,6 +37,7 @@ const row = z.object({
   doctor_id: z.uuid(),
   service_id: z.uuid(),
   price_mad: z.union([z.string(), z.number()]).transform(String),
+  cancellation_reason: z.string().nullable(),
   patient: z
     .object({
       id: z.uuid(),
@@ -63,7 +66,7 @@ export async function loadDayAppointments(params: {
   let query = supabase
     .from('appointments')
     .select(
-      'id, starts_at, ends_at, status, source, is_overbooked, version, doctor_id, service_id, price_mad, ' +
+      'id, starts_at, ends_at, status, source, is_overbooked, version, doctor_id, service_id, price_mad, cancellation_reason, ' +
         'patient:patients!appointments_patient_fkey(id, first_name, last_name, file_number, phone_e164)',
     )
     .eq('clinic_id', params.clinicId)
@@ -93,6 +96,7 @@ export async function loadDayAppointments(params: {
       doctorId: r.doctor_id,
       serviceId: r.service_id,
       priceMad: r.price_mad,
+      cancellationReason: r.cancellation_reason,
       patient: r.patient
         ? {
             id: r.patient.id,

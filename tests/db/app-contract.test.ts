@@ -191,7 +191,8 @@ describe('application to database contract', () => {
                 (select array_agg(n order by o) from unnest(p.proargnames, p.proargmodes::text[]) with ordinality as a(n, m, o)
                   where coalesce(m, 'i') in ('i', 'b')) as args,
                 p.pronargs - p.pronargdefaults as required,
-                has_function_privilege('authenticated', p.oid, 'EXECUTE') as exec
+                -- Worker functions (jobs_*) are called by the job endpoint as anon, guarded by the job key.
+                has_function_privilege(case when p.proname like 'jobs\_%' then 'anon' else 'authenticated' end, p.oid, 'EXECUTE') as exec
          from pg_proc p join pg_namespace s on s.oid = p.pronamespace
          where s.nspname = 'public' and p.proname = $1`, [call.fn])).rows;
       if (fn.length !== 1 || !fn[0]) {
@@ -204,7 +205,7 @@ describe('application to database contract', () => {
         'select proargnames as n from pg_proc where oid = $1', [fn[0].oid])).rows[0]?.n ?? [];
       for (const key of call.keys) if (!args.includes(key)) problems.push(`${call.where}: ${call.fn} has no parameter ${key}`);
       for (const name of args.slice(0, required)) if (!call.keys.includes(name)) problems.push(`${call.where}: ${call.fn} misses required ${name}`);
-      if (!exec) problems.push(`${call.where}: authenticated cannot EXECUTE ${call.fn}`);
+      if (!exec) problems.push(`${call.where}: ${call.fn.startsWith('jobs_') ? 'anon' : 'authenticated'} cannot EXECUTE ${call.fn}`);
     }
     expect(problems).toEqual([]);
   });

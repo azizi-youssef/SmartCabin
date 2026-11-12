@@ -13,7 +13,17 @@ export const ERROR_CODES = [
   'SCHEDULE_OVERLAP',
   'CHECK_IN_NOT_TODAY',
   'SESSION_CLOSED',
+  'SESSION_PAUSED',
+  'SESSION_INVALID_TRANSITION',
+  'DOCTOR_BUSY',
+  'CORRECTION_WINDOW_PASSED',
+  'INVOICE_IMMUTABLE',
+  'INVOICE_INVALID_TRANSITION',
+  'PAYMENT_EXCEEDS_BALANCE',
+  'PLAN_LIMIT_REACHED',
+  'SUBSCRIPTION_INVALID_TRANSITION',
   'BOOKING_IN_PAST',
+  'BOOKING_RULE_VIOLATED',
   'SERVICE_NOT_OFFERED',
   'APPT_INVALID_TRANSITION',
   'IDEMPOTENCY_KEY_REUSED',
@@ -32,9 +42,12 @@ export const ERROR_CODES = [
   'INVITATION_EMAIL_MISMATCH',
   'MEMBER_NOT_ACTIVE',
   'MEMBER_REMOVED',
+  'MEMBER_SUSPENDED',
   'ONLINE_BOOKING_NOT_ALLOWED',
   'INVALID_CREDENTIALS',
   'INVALID_CODE',
+  'CAPTCHA_REQUIRED',
+  'PHONE_NOT_ALLOWED',
   'RATE_LIMITED',
   'UNAVAILABLE',
   'INTERNAL',
@@ -80,6 +93,8 @@ export function toErrorCode(error: unknown): ErrorCode {
   }
   if (e.status === 429 || e.code === 'over_request_rate_limit' || e.code === 'over_sms_send_rate_limit') return 'RATE_LIMITED';
   if (e.code === 'invalid_credentials') return 'INVALID_CREDENTIALS';
+  // SC-AUD-01: Supabase Auth refused or did not receive the CAPTCHA token.
+  if (e.code === 'captcha_failed' || (typeof e.message === 'string' && /captcha/i.test(e.message))) return 'CAPTCHA_REQUIRED';
   if (e.code === 'weak_password') return 'WEAK_PASSWORD';
   if (e.code === 'email_not_confirmed') return 'EMAIL_NOT_CONFIRMED';
   if (e.code === 'over_email_send_rate_limit') return 'RATE_LIMITED';

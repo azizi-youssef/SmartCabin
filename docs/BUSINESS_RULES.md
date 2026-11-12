@@ -329,7 +329,7 @@ All KPIs are computed from records, scoped by clinic and permission, per **local
 | K2 Completed consultations | Count with status `completed` |
 | K3 Cancelled appointments | Count with status `cancelled`, split by actor (patient, clinic, system). `left_before_consultation` is shown separately |
 | K4 No-show rate | `no_show / (completed + no_show + left_before_consultation)` among `source ≠ walk_in`. Undefined if the denominator is 0 |
-| K5 Average waiting time | Mean and median of `consultation_started_at − anchor`, where anchor = `max(checked_in_at, starts_at)` for scheduled patients and `checked_in_at` for walk-ins. Completed entries only |
+| K5 Average waiting time | Mean and median of `consultation_started_at − anchor`, where anchor = `max(checked_in_at, starts_at)` for scheduled patients and `checked_in_at` for walk-ins. Completed entries only. A consultation started before the anchor counts as no wait (0), never as a negative one |
 | K6 Doctor utilization | `booked minutes / available minutes`, where booked = sum of durations of non-cancelled appointments and available = schedule windows minus time off and closures. A second "actual" figure uses real consultation minutes |
 | K7 Daily revenue | **Collected**: Σ recorded payments with `paid_at` on day D minus reversals made on day D. **Invoiced**: Σ totals of invoices issued on D. Billing owns these definitions |
 | K8 Distribution by service | Count of completed appointments per service (and share %) |

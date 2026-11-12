@@ -192,6 +192,37 @@ export async function createWorld(db: Db): Promise<World> {
     [clinicA, doctorA1, day],
   );
 
+  // An invoice of clinic A with one line and a partial payment, so the isolation checks on the
+  // billing tables have rows to hide. Dated 2000 so it never meets the numbering or revenue tests.
+  const invoiceA = randomUUID();
+  await db.query(
+    `insert into public.invoices (id, clinic_id, patient_id, bill_to_name, created_by, subtotal_mad, total_mad)
+     values ($1, $2, $3, 'Alice Alpha', $4, 200, 200)`,
+    [invoiceA, clinicA, patientA1, users.ownerA],
+  );
+  await db.query(
+    `insert into public.invoice_items (clinic_id, invoice_id, description, quantity, unit_price_mad, position)
+     values ($1, $2, 'Consultation', 1, 200, 1)`,
+    [clinicA, invoiceA],
+  );
+  await db.query(
+    `update public.invoices set status = 'issued', fiscal_year = 2000, sequence_no = 1, invoice_number = '2000-000001',
+       issued_at = '2000-01-15T10:00:00Z', issued_by = $2, clinic_snapshot = '{}' where id = $1`,
+    [invoiceA, users.ownerA],
+  );
+  await db.query(
+    `insert into public.payments (clinic_id, invoice_id, amount_mad, method, paid_at, receipt_year, receipt_seq, receipt_number, received_by)
+     values ($1, $2, 50, 'cash', '2000-01-15T10:05:00Z', 2000, 1, 'R2000-000001', $3)`,
+    [clinicA, invoiceA, users.ownerA],
+  );
+  // Clinic A's subscription is created by trigger; a plan change request gives the isolation
+  // checks a row to hide there too.
+  await db.query(
+    `insert into public.subscription_change_requests (clinic_id, plan_id, requested_by)
+     select $1, p.id, $2 from public.subscription_plans p where p.code = 'pilot'`,
+    [clinicA, users.ownerA],
+  );
+
   return {
     day, clinicA, clinicB, users, doctorA1, doctorA2, doctorB1, serviceA, serviceA2, serviceB,
     patientA1, patientA2, patientB1, apptA1, apptA2, apptB1,
@@ -232,7 +263,9 @@ export const TENANT_TABLES = [
   'clinics', 'clinic_settings', 'clinic_members', 'clinic_invitations', 'clinic_closures',
   'services', 'doctors', 'doctor_services', 'doctor_schedules', 'doctor_availability', 'doctor_time_off',
   'patients', 'patient_accounts', 'patient_consents', 'appointments', 'appointment_history',
-  'audit_logs', 'domain_events', 'doctor_sessions', 'queue_entries', 'queue_events',
+  'audit_logs', 'domain_events', 'doctor_sessions', 'queue_entries', 'queue_events', 'consultation_duration_stats',
+  'queue_display_screens', 'notifications', 'notification_attempts', 'invoices', 'invoice_items', 'payments',
+  'subscriptions', 'subscription_change_requests',
 ] as const;
 
 export function tenantColumn(table: (typeof TENANT_TABLES)[number]): string {

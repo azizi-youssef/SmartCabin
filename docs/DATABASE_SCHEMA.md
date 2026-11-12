@@ -2,10 +2,11 @@
 
 | | |
 | --- | --- |
-| Status | Written in `supabase/migrations/` (13 migrations). **Not yet applied or tested**: Docker was unavailable. See §8 |
+| Status | `supabase/migrations/` holds 29 migrations, verified by the database suite on an embedded PostgreSQL 17 with a Supabase shim (`tests/db/`). A live Supabase stack has not run them yet (Docker unavailable). See §8 |
 | Date | 2026-11-10 |
 | Scope | BC1 Identity & Access, BC2 Tenancy, BC3 Catalog, BC4 Scheduling, BC5 Patients, BC6 Appointments, BC12 Compliance, outbox |
-| Not yet | Queue (S5), notifications (S6), portal commands (S7), billing (S8), subscriptions (S10). Each slice adds its own migrations |
+| Since added | Queue and SmartFlow (0023–0025), notifications (0026), billing (0027). See the migration catalog below |
+| Not yet | Patient rescheduling from the portal, and adding a person outside a booking (S7 remainder). Each slice adds its own migrations |
 | Related | [DOMAIN_MODEL.md](DOMAIN_MODEL.md) · [DATABASE_ERD.md](DATABASE_ERD.md) · [SECURITY_MODEL.md](SECURITY_MODEL.md) · [RBAC_PERMISSION_MATRIX.md](RBAC_PERMISSION_MATRIX.md) |
 
 ## 1. How to run
@@ -51,6 +52,34 @@ pnpm db:types          # regenerates src/shared/lib/supabase/database.types.ts
 | 0021 | `20261111002100_availability_management.sql` | Module 5: `save_doctor_schedule()` (a schedule and its weekly windows in one transaction; overrides must be dated; `SCHEDULE_OVERLAP`), `list_doctor_booking_conflicts()` (future appointments that no longer fit, using the booking rules, with no patient data). `get_available_slots` corrected: bounded overlap search (audit SC-AUD-02) and time-change days (BR-TZ-03) |
 | 0022 | `20261111002200_staff_appointments.sql` | Module 6: `get_appointment()` (the appointment file; visit reason only with `appointments.view_reason`), `list_appointment_history()` (timeline with the names of clinic staff), `private.member_display_name()`. The `patient_reason` column is no longer granted to `authenticated`. `private.lock_appointment_for_command` now authorizes before locking (audit SC-AUD-18) |
 | 0023 | `20261111002300_reception_check_in.sql` | Module 7: `doctor_sessions` (one doctor's day, gapless ticket counter, queue version), `queue_entries`, `queue_events` (append-only), with RLS on `queue.view` (a doctor sees their own queue). A deferred trigger keeps queue state and appointment status matching. Commands `check_in_appointment()` (A8), `register_walk_in()` (A3), `mark_left()` (A11). Walk-ins no longer count in `appointments_no_overlap` nor in free slots (MD-10) |
+| 0024 | `20261111002400_smartflow_queue.sql` | Module 8a: `call_next`, `recall_entry`, `start_consultation`, `complete_consultation`, `set_queue_priority`, `move_queue_entry_before`, `correct_appointment_status` (A13, A14), `open_doctor_day`, `pause/resume/close_doctor_session`, `report_doctor_delay`; wait-time estimates recomputed at commit (deferred trigger on `queue_version`); `consultation_duration_stats` with `private.rebuild_consultation_duration_stats()` (to schedule nightly); `mark_left` replaced to follow the global lock order (appointment → doctor bookings → session → entries) |
+| 0025 | `20261111002500_smartflow_live.sql` | Module 8b: realtime hints after every queue change on `clinic:<id>:board:<date>` and `clinic:<id>:doctor:<doctor>:<date>` (ids and versions only), authorized by a policy on `realtime.messages` via `private.can_receive_queue_topic()`; `queue_display_screens` with `create_display_screen()` (token shown once, SHA-256 stored), `revoke_display_screen()` and `display_snapshot()` (the only function `anon` may execute); `portal_get_my_queue_status()`; `private.close_stale_sessions()`; pg_cron schedules where pg_cron exists |
+| 0030 | `20261112003000_patient_portal.sql` | Slice S7: `public.before_user_created` (Supabase Auth hook: phone sign-ups for Moroccan mobile numbers only); `public_get_clinic_profile()` and `public_get_available_slots()` (anon: clinic profile and slot times only); `portal_list_my_people()`, `portal_book_appointment()` (A1/A2 online, new person created and linked), `portal_cancel_appointment()` (A6 before the cutoff); `portal_list_my_appointments()` recreated with the clinic slug and the cancellation deadline; `private.expire_pending_appointments()` (A7) with a guarded pg_cron schedule |
+| 0029 | `20261112002900_saas_administration.sql` | Module 12: `subscription_plans` (seeded neutral `pilot` plan), `subscription_features` (BR-T-08 limits), `subscriptions` (one live per clinic; trial at clinic creation, backfilled), `subscription_change_requests`; `private.clinics_with_permission` replaced so an expired subscription removes write permissions (BR-P-01); limit triggers on doctors, members and invitations; SMS quota check in `jobs_claim_notifications` (replaced, same signature); `get_my_subscription()`, `list_available_plans()`, `request_plan_change()`, `get_my_clinic_access()`, platform functions; `private.refresh_subscription_states()` with a guarded pg_cron schedule |
+| 0028 | `20261112002800_analytics.sql` | Module 11: `kpi_operational()` (K1–K6 and K8 per period, local day, doctor or service), `SECURITY INVOKER` so RLS scopes every row; owns no table |
+| 0027 | `20261112002700_billing.sql` | Module 10: `invoices`, `invoice_items`, `payments` (command tier, RLS on `invoices.view`, audit triggers); guards: issued invoices immutable, lines only in draft, payments never deleted (recorded → reversed only), paid amount and status derived from payments; `create_invoice_draft()`, `update_invoice_draft()`, `discard_invoice_draft()`, `issue_invoice()` (gapless `invoice:<year>` counter), `void_invoice()`, `record_payment()` (gapless `receipt:<year>` counter), `reverse_payment()`, `revenue_summary()` (K7) |
+| 0026 | `20261111002600_notifications.sql` | Module 9: `notification_templates` (fr/ar platform defaults, clinic versions, allowed placeholders only), `notifications` (one row per planned message, unique idempotency key, masked recipient, no content), `notification_attempts` (append-only); planner `private.plan_notifications()` consuming `domain_events`; worker functions `jobs_plan_notifications()`, `jobs_claim_notifications()`, `jobs_record_attempt()` executable by `anon` and guarded by the job key (`private.job_credentials`); `private.call_dispatch()` (signed pg_net call); pg_cron schedules where pg_cron exists |
+
+**Deployment notes (module 8b):**
+- **Realtime:** enable Realtime Authorization (private channels) in the Supabase project. The migration creates the `realtime.messages` policy when that table exists.
+- **pg_cron:** enable the pg_cron extension, then re-run the scheduling block of migration 0025, or schedule the three jobs by hand:
+  - `private.rebuild_consultation_duration_stats()` nightly;
+  - `private.refresh_overdue_estimates()` every minute;
+  - `private.close_stale_sessions()` after midnight.
+
+**Deployment notes (S7):**
+- **Auth hook:** in the hosted project, set Authentication → Hooks → Before User Created to the Postgres function `public.before_user_created`, then enable phone sign-ups (SECURITY_MODEL §7).
+- **pg_cron:** re-run the scheduling block of migration 0030, or schedule `private.expire_pending_appointments()` every 10 minutes by hand.
+
+**Deployment notes (module 12):**
+- **Plans:** create the real plans in the platform's "Formules" page; the seeded `pilot` plan (0 MAD, no limit) keeps every existing clinic on a trial until then.
+- **pg_cron:** re-run the scheduling block of migration 0029, or schedule `private.refresh_subscription_states()` daily by hand.
+
+**Deployment notes (module 9):**
+- **Job secret:** generate `JOBS_SECRET` (at least 32 random characters, e.g. `openssl rand -hex 32`) and set it in the app's server environment. Store only its SHA-256: compute it locally (`printf %s "$JOBS_SECRET" | openssl dgst -sha256`), then run `select private.set_job_key_hash('<hex digest>');` as `postgres`. Rotating the secret is the same two steps.
+- **Vault:** create the secrets `smartcabin_jobs_secret` (the same value as `JOBS_SECRET`) and `smartcabin_app_url` (the app's public origin, without a trailing slash). Without them, `private.call_dispatch()` does nothing.
+- **pg_net and pg_cron:** enable both, then re-run the scheduling block of migration 0026, or schedule by hand `private.plan_notifications()` and `private.call_dispatch()` every minute.
+- **Provider:** `NOTIFICATIONS_PROVIDER=disabled` (default) keeps every message planned and sends nothing; `simulator` accepts every message without sending it. A real provider needs an adapter and a commercial decision.
 
 ## 3. Tables
 

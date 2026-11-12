@@ -6,6 +6,8 @@
 create role anon nologin noinherit;
 create role authenticated nologin noinherit;
 create role service_role nologin noinherit bypassrls;
+-- The role Supabase Auth runs its hooks as (migration 0030 grants it the before-user-created hook).
+create role supabase_auth_admin nologin noinherit;
 grant anon, authenticated, service_role to postgres;
 
 create schema if not exists extensions;
@@ -90,3 +92,35 @@ language sql stable as $$
 $$;
 
 grant execute on function auth.uid(), auth.role(), auth.jwt() to anon, authenticated, service_role;
+
+-- ---------------------------------------------------------------------------
+-- Realtime (minimal stand-in for Supabase Realtime's database interface)
+-- realtime.send() records broadcasts in realtime.messages; realtime.topic() returns the topic a
+-- client is authorizing for (set by tests through the realtime.topic setting). On Supabase,
+-- private-channel authorization evaluates SELECT policies on realtime.messages the same way.
+-- ---------------------------------------------------------------------------
+create schema realtime;
+grant usage on schema realtime to anon, authenticated, service_role;
+
+create table realtime.messages (
+  id          bigint generated always as identity primary key,
+  topic       text not null,
+  extension   text not null default 'broadcast',
+  payload     jsonb,
+  event       text,
+  private     boolean default true,
+  inserted_at timestamptz not null default now()
+);
+alter table realtime.messages enable row level security;
+grant select on realtime.messages to authenticated;
+
+create function realtime.topic() returns text
+language sql stable as $$
+  select nullif(current_setting('realtime.topic', true), '')
+$$;
+grant execute on function realtime.topic() to anon, authenticated, service_role;
+
+create function realtime.send(payload jsonb, event text, topic text, private boolean default true) returns void
+language sql volatile as $$
+  insert into realtime.messages (topic, extension, payload, event, private) values (topic, 'broadcast', payload, event, private);
+$$;

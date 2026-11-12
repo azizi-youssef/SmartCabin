@@ -16,12 +16,16 @@ export interface DaySummary {
   noShowRate: number | null;
 }
 
-export function summarizeDay(rows: ReadonlyArray<{ status: AppointmentStatus; source: string }>): DaySummary {
+export function summarizeDay(
+  rows: ReadonlyArray<{ status: AppointmentStatus; source: string; cancellationReason?: string | null }>,
+): DaySummary {
   const count = (status: AppointmentStatus) => rows.filter((r) => r.status === status).length;
   const scheduled = rows.filter((r) => r.source !== 'walk_in');
   const noShow = scheduled.filter((r) => r.status === 'no_show').length;
   const completedScheduled = scheduled.filter((r) => r.status === 'completed').length;
-  const denominator = completedScheduled + noShow;
+  const left = scheduled.filter((r) => r.status === 'cancelled' && r.cancellationReason === 'left_before_consultation').length;
+  // K4 = no_show / (completed + no_show + left_before_consultation), the same as kpi_operational().
+  const denominator = completedScheduled + noShow + left;
   return {
     total: rows.length,
     upcoming: count('pending') + count('confirmed'),

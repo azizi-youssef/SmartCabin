@@ -12,9 +12,11 @@ import { AppointmentRowActions } from '@/modules/appointments/ui/row-actions';
 import { AppointmentStatusBadge } from '@/modules/appointments/ui/status-badge';
 import { doctorDisplayName, localizedName } from '@/modules/catalog/names';
 import { loadCatalog } from '@/modules/catalog/queries';
-import { loadDayQueue } from '@/modules/reception/queries';
-import { minutesSince, unresolvedAppointments, waitingOrder, type QueueEntry } from '@/modules/reception/queue';
+import { loadDayQueue, loadDurationSpreads } from '@/modules/reception/queries';
+import { estimateRange, minutesSince, unresolvedAppointments, waitingOrder, type QueueEntry } from '@/modules/reception/queue';
+import { AutoRefresh, CorrectionButton, MoveUpButton, PriorityButton } from '@/modules/reception/ui/queue-controls';
 import { CheckInButton, MarkLeftButton } from '@/modules/reception/ui/reception-actions';
+import { QueueLive } from '@/modules/reception/ui/queue-live';
 import { WalkInDialog } from '@/modules/reception/ui/walk-in-dialog';
 import { can, loadWorkspace } from '@/modules/tenancy/workspace';
 import { formatLocalDay, formatTime } from '@/shared/lib/format';
@@ -63,10 +65,11 @@ export default async function ReceptionPage({
 
   const catalog = await loadCatalog(ws.clinic.id);
   const doctorFilter = catalog.status === 'ok' && catalog.data.doctors.some((d) => d.id === query.doctor) ? (query.doctor ?? '') : '';
-  const [appointments, grace, queue] = await Promise.all([
+  const [appointments, grace, queue, spreads] = await Promise.all([
     loadDayAppointments({ clinicId: ws.clinic.id, day, timeZone: tz, ...(doctorFilter ? { doctorIds: [doctorFilter] } : {}) }),
     loadCheckinGrace(ws.clinic.id),
     can(ws, 'queue.view') ? loadDayQueue(ws.clinic.id, day) : Promise.resolve(null),
+    can(ws, 'queue.view') && day === todayLocal ? loadDurationSpreads(ws.clinic.id) : Promise.resolve(new Map<string, number>()),
   ]);
 
   const urlParams: Record<string, string> = { day, ...(doctorFilter ? { doctor: doctorFilter } : {}) };
@@ -77,6 +80,9 @@ export default async function ReceptionPage({
   const isToday = day === todayLocal;
   const canCheckIn = writable && isToday && can(ws, 'queue.check_in');
   const canMarkLeft = writable && can(ws, 'queue.mark_left');
+  const canPrioritize = writable && can(ws, 'queue.prioritize');
+  const canReorder = writable && can(ws, 'queue.reorder');
+  const canCorrect = writable && can(ws, 'appointments.correct_status');
   const bookingCatalog =
     catalog.status === 'ok'
       ? {
@@ -110,7 +116,7 @@ export default async function ReceptionPage({
   const services = new Map(catalog.data.services.map((s) => [s.id, localizedName(locale, s.nameFr, s.nameAr)]));
   const now = new Date();
   type Row = (typeof appointments.data)[number];
-  const entries: QueueEntry[] = queue?.status === 'ok' ? queue.data : [];
+  const entries: QueueEntry[] = queue?.status === 'ok' ? queue.data.entries : [];
   // The latest entry describes the appointment (tickets increase within a day).
   const entryByAppointment = new Map<string, QueueEntry>();
   for (const e of entries) {
@@ -186,6 +192,12 @@ export default async function ReceptionPage({
             {canMarkLeft && entry && open && a.status === 'checked_in' ? (
               <MarkLeftButton queueEntryId={entry.id} patientName={nameOf(a)} ticket={entry.ticketNumber} />
             ) : null}
+            {canCorrect && isToday && a.status === 'no_show' ? (
+              <CorrectionButton appointmentId={a.id} kind="lateArrival" patientName={nameOf(a)} />
+            ) : null}
+            {canCorrect && a.status === 'in_progress' ? (
+              <CorrectionButton appointmentId={a.id} kind="undoStart" patientName={nameOf(a)} />
+            ) : null}
             {canBook ? (
               <AppointmentRowActions
                 timeZone={tz}
@@ -216,6 +228,8 @@ export default async function ReceptionPage({
   return (
     <>
       {header}
+      {isToday ? <AutoRefresh seconds={60} /> : null}
+      {isToday && queue ? <QueueLive clinicSlug={ws.clinic.slug} /> : null}
       {isToday && queue ? (
         <Section id="waiting-room" title={t('reception.waitingRoom')} description={t('reception.waitingRoomHint')} className="mb-6">
           {queue.status !== 'ok' ? (
@@ -234,17 +248,28 @@ export default async function ReceptionPage({
                       <span className="text-small font-normal text-ink-muted">{t('reception.waitingCount', { count: list.length })}</span>
                     </h3>
                     <ol className="divide-y divide-line">
-                      {list.map((e) => {
+                      {list.map((e, index) => {
                         const a = appointmentById.get(e.appointmentId);
+                        const ahead = list[index - 1];
+                        const range = estimateRange(e.estimatedStartAt, now, a ? (spreads.get(`${e.doctorId}:${a.serviceId}`) ?? 0) : 0);
                         return (
-                          <li key={e.id} className="flex items-center gap-3 px-4 py-2">
+                          <li key={e.id} className="flex items-center gap-2 px-4 py-2">
                             <span className="w-14 shrink-0 font-medium tabular text-ink">{t('reception.ticket', { ticket: e.ticketNumber })}</span>
                             <span className="grid min-w-0 flex-1 leading-tight">
-                              <span className="truncate text-body text-ink">{nameOf(a)}</span>
+                              <span className="flex items-center gap-1.5 truncate text-body text-ink">
+                                {nameOf(a)}
+                                {e.priorityLevel === 1 ? <Badge tone="accent">{t('queue.priority')}</Badge> : null}
+                                {e.state === 'called' ? <Badge tone="info">{t('queue.calledBadge')}</Badge> : null}
+                              </span>
                               <span className="text-small text-ink-muted">
                                 {t('reception.waitingSince', { time: formatTime(locale, e.checkedInAt, tz), minutes: minutesSince(e.checkedInAt, now) })}
+                                {range ? <> · {t('queue.estimate', { from: formatTime(locale, range.low, tz), to: formatTime(locale, range.high, tz) })}</> : null}
                               </span>
                             </span>
+                            {canPrioritize ? <PriorityButton entryId={e.id} patientName={nameOf(a)} priority={e.priorityLevel === 1} /> : null}
+                            {canReorder && ahead && ahead.priorityLevel === e.priorityLevel ? (
+                              <MoveUpButton entryId={e.id} beforeEntryId={ahead.id} patientName={nameOf(a)} />
+                            ) : null}
                             {canMarkLeft ? <MarkLeftButton queueEntryId={e.id} patientName={nameOf(a)} ticket={e.ticketNumber} /> : null}
                           </li>
                         );

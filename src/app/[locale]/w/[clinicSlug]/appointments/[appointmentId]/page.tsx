@@ -5,11 +5,15 @@ import { z } from 'zod';
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { availableActions } from '@/modules/appointments/domain/status';
+import { loadAppointmentInvoice } from '@/modules/billing/queries';
+import { NewInvoiceButton } from '@/modules/billing/ui/invoice-actions';
 import { loadAppointmentFile, loadCheckinGrace, type AppointmentEvent } from '@/modules/appointments/queries';
 import { AppointmentRowActions } from '@/modules/appointments/ui/row-actions';
 import { AppointmentStatusBadge } from '@/modules/appointments/ui/status-badge';
 import { doctorDisplayName, localizedName } from '@/modules/catalog/names';
 import { loadCatalog } from '@/modules/catalog/queries';
+import { loadAppointmentMessages } from '@/modules/notifications/queries';
+import { MessageLog } from '@/modules/notifications/ui/message-log';
 import { can, loadWorkspace } from '@/modules/tenancy/workspace';
 import { formatDateTime, formatLongDate, formatMoney, formatTime } from '@/shared/lib/format';
 import { formatPhone } from '@/shared/lib/phone';
@@ -27,8 +31,8 @@ export async function generateMetadata() {
 
 /**
  * Appointment file: what was booked, by whom, its current status, the actions still possible,
- * and the append-only history. The visit reason is shown only with appointments.view_reason
- * (the database withholds it otherwise).
+ * the append-only history and, with notifications.view_log, the messages planned for the patient.
+ * The visit reason is shown only with appointments.view_reason (the database withholds it otherwise).
  */
 export default async function AppointmentPage({ params }: { params: Promise<{ clinicSlug: string; appointmentId: string }> }) {
   const { clinicSlug, appointmentId } = await params;
@@ -51,10 +55,13 @@ export default async function AppointmentPage({ params }: { params: Promise<{ cl
   }
   if (!z.uuid().safeParse(appointmentId).success) return notFound;
 
-  const [file, catalog, grace] = await Promise.all([
+  const canViewMessages = can(ws, 'notifications.view_log');
+  const [file, catalog, grace, messages, invoice] = await Promise.all([
     loadAppointmentFile(ws.clinic.id, appointmentId),
     loadCatalog(ws.clinic.id),
     loadCheckinGrace(ws.clinic.id),
+    canViewMessages ? loadAppointmentMessages(ws.clinic.id, appointmentId) : null,
+    can(ws, 'invoices.view') ? loadAppointmentInvoice(ws.clinic.id, appointmentId) : null,
   ]);
   if (file.status === 'error' && file.code === 'NOT_FOUND') return notFound;
   if (file.status !== 'ok') return <LoadFailure outcome={file} />;
@@ -70,6 +77,10 @@ export default async function AppointmentPage({ params }: { params: Promise<{ cl
   const canBook = can(ws, 'appointments.book');
   const backHref = canBook ? `/w/${slug}/reception?day=${day}&doctor=${a.doctorId}` : `/w/${slug}/doctor?day=${day}`;
   const editable = ws.clinic.status !== 'suspended' && canBook;
+  // One open invoice per appointment: link to it, or offer to bill (not pending or cancelled).
+  const openInvoice = invoice?.status === 'ok' ? invoice.data : null;
+  const billable = ws.clinic.status !== 'suspended' && can(ws, 'invoices.create') && invoice?.status === 'ok'
+    && !openInvoice && a.status !== 'pending' && a.status !== 'cancelled';
 
   const actorLabel = (e: Pick<AppointmentEvent, 'actorType' | 'actorName'>) =>
     e.actorType === 'user' ? (e.actorName ?? t('appointment.actor.user')) : t(`appointment.actor.${e.actorType}`);
@@ -152,13 +163,21 @@ export default async function AppointmentPage({ params }: { params: Promise<{ cl
           </span>
         }
         actions={
-          editable ? (
-            <AppointmentRowActions
-              timeZone={tz}
-              actions={availableActions(a, requestNow(), grace)}
-              appointment={{ id: a.id, version: a.version, doctorId: a.doctorId, serviceId: a.serviceId, day, patientName, timeLabel: formatTime(locale, a.startsAt, tz) }}
-            />
-          ) : null
+          <>
+            {openInvoice ? (
+              <Link href={`/w/${slug}/billing/${openInvoice.id}`} className="focus-ring rounded-sm text-small font-medium text-accent hover:underline">
+                {openInvoice.number ? t('billing.invoiceNumber', { number: openInvoice.number }) : t('billing.openDraft')}
+              </Link>
+            ) : null}
+            {billable ? <NewInvoiceButton slug={slug} appointmentId={a.id} label={t('billing.bill')} /> : null}
+            {editable ? (
+              <AppointmentRowActions
+                timeZone={tz}
+                actions={availableActions(a, requestNow(), grace)}
+                appointment={{ id: a.id, version: a.version, doctorId: a.doctorId, serviceId: a.serviceId, day, patientName, timeLabel: formatTime(locale, a.startsAt, tz) }}
+              />
+            ) : null}
+          </>
         }
       />
 
@@ -188,6 +207,12 @@ export default async function AppointmentPage({ params }: { params: Promise<{ cl
             </ol>
           )}
         </Section>
+
+        {messages ? (
+          <Section id="messages" title={t('appointment.messages')} description={t('appointment.messagesHint')}>
+            <MessageLog messages={messages} timeZone={tz} />
+          </Section>
+        ) : null}
       </div>
     </>
   );

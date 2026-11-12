@@ -18,10 +18,33 @@ const COMMAND_TABLES = [
   'appointments', 'appointment_history', 'clinic_members', 'clinic_invitations', 'patient_accounts',
   'audit_logs', 'domain_events', 'platform_admins', 'permissions', 'role_permissions',
   'appointment_status_transitions', 'specialties', 'legal_documents',
+  'invoices', 'invoice_items', 'payments', 'subscriptions', 'subscription_change_requests',
+  'subscription_plans', 'subscription_features',
 ];
 
 /** Public SECURITY DEFINER functions that authenticate the caller themselves (no clinic yet). */
 const SELF_GUARDED = ['create_clinic', 'get_my_memberships', 'accept_invitation'];
+
+/**
+ * Public SECURITY DEFINER functions whose credential is a secret token, not a session (waiting-room
+ * screens). They must look the token up by its SHA-256 digest, and they are the only functions
+ * anon may execute.
+ */
+const TOKEN_GUARDED = ['display_snapshot'];
+
+/**
+ * Worker functions (notifications): callable by anon from the job endpoint, guarded by the job
+ * key (private.require_job_key) instead of a service-role key.
+ */
+const JOB_FUNCTIONS = ['jobs_claim_notifications', 'jobs_plan_notifications', 'jobs_record_attempt'];
+
+/**
+ * Public reads for the booking page (S7): callable by anon, they return a clinic's public profile
+ * and free slot times. Their own source must not touch any patient-level or financial table.
+ */
+const PUBLIC_READS = ['public_get_available_slots', 'public_get_clinic_profile'];
+const PATIENT_LEVEL = ['public.patients', 'public.patient_', 'public.appointment_history', 'public.invoices', 'public.payments',
+  'public.notifications', 'public.queue_entries'];
 
 describe('database security invariants', () => {
   it('enables RLS on every table in the public and private schemas', async () => {
@@ -107,11 +130,38 @@ describe('database security invariants', () => {
            and p.prosrc not like '%private.require_%'
            and p.prosrc not like '%private.lock_appointment_for_command%'
            and p.prosrc not like '%private.lock_member_for_change%'
+           and p.prosrc not like '%private.lock_session_for_command%'
+           and p.prosrc not like '%private.lock_entry_session%'
            and p.proname <> all($1::text[])
          order by 1`,
-        [SELF_GUARDED],
+        [[...SELF_GUARDED, ...TOKEN_GUARDED, ...PUBLIC_READS]],
       )).rows.map((r) => r.fn));
     expect(unguarded).toEqual([]);
+
+    const tokenGuardedHashesToken = await withRollback(pool, async (db) =>
+      (await db.query<{ fn: string }>(
+        `select p.proname as fn from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+         where n.nspname = 'public' and p.proname = any($1::text[]) and p.prosrc not like '%extensions.digest(p_token%'`,
+        [TOKEN_GUARDED],
+      )).rows);
+    expect(tokenGuardedHashesToken).toEqual([]);
+
+    const jobFunctionsRequireKey = await withRollback(pool, async (db) =>
+      (await db.query<{ fn: string }>(
+        `select p.proname as fn from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+         where n.nspname = 'public' and p.proname = any($1::text[]) and p.prosrc not like '%private.require_job_key(p_job_key)%'`,
+        [JOB_FUNCTIONS],
+      )).rows);
+    expect(jobFunctionsRequireKey).toEqual([]);
+
+    const publicReadsTouchPatients = await withRollback(pool, async (db) =>
+      (await db.query<{ fn: string }>(
+        `select p.proname as fn from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+         where n.nspname = 'public' and p.proname = any($1::text[])
+           and exists (select 1 from unnest($2::text[]) t where p.prosrc like '%' || t || '%')`,
+        [PUBLIC_READS, PATIENT_LEVEL],
+      )).rows);
+    expect(publicReadsTouchPatients).toEqual([]);
 
     const selfGuardedChecksCaller = await withRollback(pool, async (db) =>
       (await db.query<{ fn: string }>(
@@ -122,14 +172,15 @@ describe('database security invariants', () => {
     expect(selfGuardedChecksCaller).toEqual([]);
   });
 
-  it('lets anon execute no function in public or private', async () => {
+  it('lets anon execute no function in public or private, except the token- and job-key-guarded ones and the public reads', async () => {
     const executable = await withRollback(pool, async (db) =>
       (await db.query<{ fn: string }>(
         `select n.nspname || '.' || p.proname as fn
          from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-         where n.nspname in ('public', 'private') and has_function_privilege('anon', p.oid, 'EXECUTE')`,
+         where n.nspname in ('public', 'private') and has_function_privilege('anon', p.oid, 'EXECUTE')
+         order by 1`,
       )).rows.map((r) => r.fn));
-    expect(executable).toEqual([]);
+    expect(executable).toEqual([...TOKEN_GUARDED, ...JOB_FUNCTIONS, ...PUBLIC_READS].map((fn) => `public.${fn}`).sort());
   });
 
   it('exposes only the RLS helpers from the private schema to authenticated', async () => {
@@ -141,7 +192,7 @@ describe('database security invariants', () => {
          order by 1`,
       )).rows.map((r) => r.fn));
     expect(executable).toEqual([
-      'clinics_with_permission', 'my_doctor_ids', 'my_doctor_patient_ids',
+      'can_receive_queue_topic', 'clinics_with_permission', 'my_doctor_ids', 'my_doctor_patient_ids',
       'practitioner_only_clinics', 'role_requires_mfa', 'session_aal',
     ]);
   });

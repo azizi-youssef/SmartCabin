@@ -8,6 +8,7 @@ import { z } from 'zod';
 
 import type { ErrorCode } from '@/shared/lib/errors';
 import { Button } from '@/shared/ui/button';
+import { Captcha, captchaEnabled } from '@/shared/ui/captcha';
 import { Field } from '@/shared/ui/field';
 import { Input } from '@/shared/ui/form-controls';
 import { InlineAlert } from '@/shared/ui/states';
@@ -21,12 +22,17 @@ export function SignInForm() {
   const t = useTranslations();
   const locale = useLocale();
   const [error, setError] = useState<ErrorCode | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaKey, setCaptchaKey] = useState(0);
   const form = useForm<z.input<typeof signInSchema>>({ resolver: zodResolver(signInSchema), defaultValues: { email: '', password: '' } });
 
   const onSubmit = form.handleSubmit(async (values) => {
     setError(null);
-    const result = await signInWithPassword(locale, values);
-    if (!result.ok) setError(result.code);
+    const result = await signInWithPassword(locale, values, captchaToken ?? undefined);
+    if (!result.ok) {
+      setError(result.code);
+      setCaptchaKey((k) => k + 1); // a CAPTCHA token is single use
+    }
   });
 
   return (
@@ -37,8 +43,9 @@ export function SignInForm() {
       <Field id="password" label={t('auth.password')} required error={form.formState.errors.password ? t('patients.form.errors.required') : undefined}>
         <Input type="password" autoComplete="current-password" dir="ltr" className="text-start" {...form.register('password')} />
       </Field>
+      <Captcha onToken={setCaptchaToken} resetKey={captchaKey} />
       {error ? <InlineAlert tone="danger">{t(`errors.${error}`)}</InlineAlert> : null}
-      <Button type="submit" variant="primary" size="lg" loading={form.formState.isSubmitting}>
+      <Button type="submit" variant="primary" size="lg" loading={form.formState.isSubmitting} disabled={captchaEnabled() && !captchaToken}>
         {t('auth.submit')}
       </Button>
     </form>
@@ -145,6 +152,8 @@ export function PhoneSignInForm() {
   const [code, setCode] = useState('');
   const [error, setError] = useState<ErrorCode | null>(null);
   const [pending, startTransition] = useTransition();
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaKey, setCaptchaKey] = useState(0);
 
   if (!sentTo) {
     return (
@@ -155,7 +164,8 @@ export function PhoneSignInForm() {
           e.preventDefault();
           setError(null);
           startTransition(async () => {
-            const result = await sendPhoneCode({ phone: phoneInput });
+            const result = await sendPhoneCode({ phone: phoneInput, ...(captchaToken ? { captchaToken } : {}) });
+            setCaptchaKey((k) => k + 1); // a CAPTCHA token is single use
             if (result.ok) setSentTo(result.data.phone);
             else setError(result.code);
           });
@@ -164,8 +174,9 @@ export function PhoneSignInForm() {
         <Field id="phone" label={t('auth.phone')} hint={t('auth.phoneHint')} required>
           <Input type="tel" inputMode="tel" autoComplete="tel" dir="ltr" className="h-11 text-start" value={phoneInput} onChange={(e) => setPhoneInput(e.target.value)} />
         </Field>
+        <Captcha onToken={setCaptchaToken} resetKey={captchaKey} />
         {error ? <InlineAlert tone="danger">{t(`errors.${error}`)}</InlineAlert> : null}
-        <Button type="submit" variant="primary" size="lg" loading={pending} disabled={phoneInput.trim().length < 9}>
+        <Button type="submit" variant="primary" size="lg" loading={pending} disabled={phoneInput.trim().length < 9 || (captchaEnabled() && !captchaToken)}>
           {t('auth.sendCode')}
         </Button>
       </form>

@@ -37,6 +37,17 @@ describe('day summary (counts from records only)', () => {
     expect(summary).toEqual({ total: 6, upcoming: 1, inClinic: 1, completed: 2, cancelled: 1, noShow: 1, noShowRate: 0.5 });
   });
 
+  it('counts patients who left before consultation in the no-show denominator (K4)', () => {
+    const summary = summarizeDay([
+      { status: 'completed', source: 'staff' },
+      { status: 'no_show', source: 'staff' },
+      { status: 'cancelled', source: 'staff', cancellationReason: 'left_before_consultation' },
+      { status: 'cancelled', source: 'staff', cancellationReason: 'patient_request' },
+      { status: 'cancelled', source: 'walk_in', cancellationReason: 'left_before_consultation' },
+    ]);
+    expect(summary.noShowRate).toBeCloseTo(1 / 3);
+  });
+
   it('returns no rate (not zero) when nothing can be measured', () => {
     expect(summarizeDay([]).noShowRate).toBeNull();
     expect(summarizeDay([{ status: 'confirmed', source: 'staff' }]).noShowRate).toBeNull();

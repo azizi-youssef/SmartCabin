@@ -23,11 +23,11 @@
 
 | Route | Method | Authentication | Purpose |
 | --- | --- | --- | --- |
-| `/api/internal/jobs/dispatch` | POST | HMAC signature from `pg_net` + timestamp less than 5 min old | Process `domain_events` and due notifications |
+| `/api/internal/jobs/dispatch` | POST | Headers `x-smartcabin-timestamp` (Unix seconds, less than 5 min from now) and `x-smartcabin-signature` (hex HMAC-SHA256 of `<timestamp>.<raw body>` with `JOBS_SECRET`), sent by `pg_net` | Plan from `domain_events`, then claim, send and record due notifications. Answers `{planned, claimed, sent, failed, retrying}` only, `no-store`; `401` for a bad signature, `413` for a body over 1 KB, `503` when the database is unreachable (implemented in module 9) |
 | `/api/webhooks/sms/<provider>` | POST | Provider signature | Delivery receipts |
 | `/api/webhooks/email/<provider>` | POST | Provider signature | Delivery and bounce events |
-| `/api/display/<token>` | GET | Display token (hashed lookup) | Ticket numbers being called. No-cache. Rate-limited |
-| `/api/files/invoices/<invoice_id>` | GET | Session + `invoices.view` | Generate the PDF if needed, redirect to a 60-second signed URL |
+| `/api/display` | GET | Display token in `Authorization: Bearer <token>` (hashed lookup) | Ticket numbers and doctor display names. No-cache. The token is sent in a header, not in the path, so it never appears in access logs (implemented in module 8b). Rate limiting is left to the hosting edge (audit SC-AUD-14) |
+| `/api/files/invoices/<invoice_id>` | GET | Session + `invoices.view` | Generate the PDF if needed, redirect to a 60-second signed URL. **Not built yet (module 10):** the page `/print/<clinic>/invoices/<id>` (and `?receipt=<payment>`) prints the invoice and its receipts from the browser, under the same session and RLS |
 | `/api/health` | GET | None | Liveness (exposes no version or configuration) |
 
 Public booking pages and the patient portal are pages of the Next.js app (Server Components + Server Actions). A separate public REST API is **not** needed in the MVP. If one is added later (mobile app), it will be versioned under `/api/v1`.
@@ -59,7 +59,7 @@ The same names are used for the PostgreSQL function and the TypeScript applicati
 | --- | --- |
 | Owns | `clinics`, `clinic_settings`, `clinic_closures`, `clinic_counters` |
 | Commands | `create_clinic`, `update_clinic_profile`, `update_clinic_settings`, `add_clinic_closure`, `remove_clinic_closure`, `request_clinic_closure`. Platform: `platform_approve_clinic`, `platform_reject_clinic`, `platform_suspend_clinic`, `platform_reactivate_clinic`, `platform_close_clinic` |
-| Queries | `get_clinic_by_slug` (workspace), `public_get_clinic_profile(slug)` (anon), `platform_list_clinics` |
+| Queries | `get_clinic_by_slug` (workspace), `public_get_clinic_profile(slug)` (anon, implemented in S7: profile, online flag, policy and online offer only), `platform_list_clinics` |
 | Events emitted | `clinic.submitted`, `clinic.approved`, `clinic.suspended` |
 | Internal API | `private.next_counter_value(clinic_id, key)`, used by Patients and Billing |
 
@@ -78,7 +78,7 @@ The same names are used for the PostgreSQL function and the TypeScript applicati
 | --- | --- |
 | Owns | `doctor_schedules`, `doctor_availability`, `doctor_time_off` |
 | Writes | Managed tables, plus `save_weekly_schedule` (replaces a schedule's windows atomically, returns conflicting appointments), `add_time_off` (returns conflicts) |
-| Queries | `get_available_slots(doctor, service, from, to)` (staff), `public_get_available_slots(slug, doctor, service, from, to)` (anon, rate-limited), `private.is_bookable(doctor, service, period)` (internal, used by Appointments) |
+| Queries | `get_available_slots(doctor, service, from, to)` (staff), `public_get_available_slots(slug, doctor, service, from, to)` (anon, implemented in S7: online rules, at most 14 days per call; rate limiting is left to the hosting edge, SC-AUD-14), `private.is_bookable(doctor, service, period)` (internal, used by Appointments) |
 | Consumed by | Appointments (validation inside `book_appointment`), Analytics (available minutes) |
 
 ### BC5 Patients
@@ -97,7 +97,7 @@ The same names are used for the PostgreSQL function and the TypeScript applicati
 | Owns | `appointments`, `appointment_history` |
 | Commands | `book_appointment` (staff and portal variants), `confirm_appointment`, `reschedule_appointment`, `cancel_appointment`, `mark_no_show`, `correct_appointment_status` |
 | Queries | `list_day_appointments(date, doctor?)`, `get_appointment`, `list_end_of_day_unresolved(date)` |
-| Portal | `portal_book_appointment`, `portal_list_my_appointments`, `portal_cancel_appointment`, `portal_reschedule_appointment` |
+| Portal | **Implemented in S7:** `portal_book_appointment(clinic, doctor, service, starts_at, patient?, new_person?, idempotency_key?)`, `portal_list_my_appointments()` (with the clinic slug and the cancellation deadline), `portal_cancel_appointment(appointment)`, `portal_list_my_people(clinic)`. Not built yet: `portal_reschedule_appointment` |
 | Events emitted | `appointment.booked`, `.confirmed`, `.rescheduled`, `.cancelled`, `.no_show` |
 | Depends on | Scheduling `is_bookable`, Catalog effective duration and price, Patients (ownership check) |
 
@@ -135,7 +135,7 @@ The same names are used for the PostgreSQL function and the TypeScript applicati
 | | |
 | --- | --- |
 | Owns | Nothing (read-only) |
-| Queries | `kpi_daily(from, to, doctor?)` covering K1–K6 and K8, `kpi_revenue(from, to)` covering K7 (delegates to Billing's definition), `platform_kpi_overview()` (aggregates only) |
+| Queries | **Implemented (module 11):** `kpi_operational(clinic, from, to, group, doctor?)` covering K1–K6 and K8, with `group` = `total`, `day`, `doctor` or `service` (it replaces the planned `kpi_daily`). K7 is billing's `revenue_summary(clinic, from, to)` itself, so there is one definition (I-14) and no `kpi_revenue` wrapper. `platform_kpi_overview()` (aggregates only) belongs to SaaS administration (module 12) |
 | Rule | `SECURITY INVOKER`, so RLS and scope apply automatically |
 
 ### BC11 Subscriptions
@@ -143,8 +143,8 @@ The same names are used for the PostgreSQL function and the TypeScript applicati
 | | |
 | --- | --- |
 | Owns | `subscription_plans`, `subscription_features`, `subscriptions` |
-| Commands | `request_plan_change` (owner). Platform: `platform_set_subscription`, `platform_mark_subscription_paid`, `platform_manage_plan` |
-| Queries | `get_my_subscription`, `private.feature_limit(clinic, key)` (internal, used by commands that enforce limits) |
+| Commands | **Implemented (module 12):** `request_plan_change(clinic, plan_code, note?)` (owner). Platform: `platform_set_subscription(clinic, plan_code, status, period_start?, period_end?, trial_ends_on?, notes?)` with local dates, `platform_mark_subscription_paid(clinic, paid_until, notes?)`, `platform_save_plan(...)` (named `platform_manage_plan` in the plan) |
+| Queries | `get_my_subscription(clinic)`, `list_available_plans(clinic)`, `get_my_clinic_access(clinic)` (effective permissions and read-only reason, for the interface), `platform_list_plans()`, `platform_kpi_overview()` (counts only). Internal: `private.plan_limit(clinic, key)` (named `feature_limit` in the plan), used by the limit triggers and the dispatcher |
 
 ### BC12 Compliance
 
@@ -199,7 +199,9 @@ The same names are used for the PostgreSQL function and the TypeScript applicati
 | `LAST_OWNER` | BR-M-04 | Removing or demoting the last owner |
 | `INVOICE_IMMUTABLE` | BR-F-02 | Editing an issued invoice |
 | `PAYMENT_EXCEEDS_BALANCE` | BR-F-04 | Overpayment |
+| `INVOICE_INVALID_TRANSITION` | BR-F-01/05/06 | Issuing twice, paying a draft or a void invoice, voiding with payments, reversing twice |
 | `PLAN_LIMIT_REACHED` | BR-T-08 | Plan feature limit (`details.feature`) |
+| `SUBSCRIPTION_INVALID_TRANSITION` | BUSINESS_RULES §7 | A subscription status change the lifecycle does not allow |
 | `RATE_LIMITED` | Rate limiter | Too many attempts. `details.retryAfterSeconds` |
 | `DUPLICATE` | `23505` | A unique constraint, outside idempotency keys |
 | `INTERNAL` | Anything else | Logged with a request id, no patient data. A generic message is shown |

@@ -13,6 +13,8 @@ import { Field } from '@/shared/ui/field';
 import { Input } from '@/shared/ui/form-controls';
 import { EmptyState, InlineAlert } from '@/shared/ui/states';
 
+import { Captcha, captchaEnabled } from '@/shared/ui/captcha';
+
 import { requestPasswordReset, signUp, updatePassword } from '../actions';
 import { emailOnlySchema, newPasswordSchema, signUpSchema, type NewPasswordInput, type SignUpInput } from '../schemas';
 
@@ -32,6 +34,8 @@ export function SignUpForm() {
   const fieldError = useFieldError();
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<ErrorCode | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaKey, setCaptchaKey] = useState(0);
   const form = useForm<SignUpInput, unknown, z.output<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
     defaultValues: { fullName: '', email: '', password: '' },
@@ -46,7 +50,8 @@ export function SignUpForm() {
       className="grid gap-4"
       onSubmit={form.handleSubmit(async (values) => {
         setError(null);
-        const result = await signUp(locale, values);
+        const result = await signUp(locale, values, captchaToken ?? undefined);
+        setCaptchaKey((k) => k + 1); // a CAPTCHA token is single use
         if (result.ok) setSent(true);
         else setError(result.code);
       })}
@@ -60,8 +65,9 @@ export function SignUpForm() {
       <Field id="su-password" label={t('auth.password')} hint={t('signUp.passwordHint')} required error={fieldError(form.formState.errors.password?.message)}>
         <Input type="password" autoComplete="new-password" dir="ltr" className="text-start" {...form.register('password')} />
       </Field>
+      <Captcha onToken={setCaptchaToken} resetKey={captchaKey} />
       {error ? <InlineAlert tone="danger">{t(`errors.${error}`)}</InlineAlert> : null}
-      <Button type="submit" variant="primary" size="lg" loading={form.formState.isSubmitting}>
+      <Button type="submit" variant="primary" size="lg" loading={form.formState.isSubmitting} disabled={captchaEnabled() && !captchaToken}>
         {t('signUp.submit')}
       </Button>
     </form>
@@ -74,6 +80,8 @@ export function ForgotPasswordForm() {
   const fieldError = useFieldError();
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<ErrorCode | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaKey, setCaptchaKey] = useState(0);
   const form = useForm<z.input<typeof emailOnlySchema>>({ resolver: zodResolver(emailOnlySchema), defaultValues: { email: '' } });
 
   if (sent) return <EmailSentState title={t('password.sentTitle')} body={t('password.sentBody')} />;
@@ -84,7 +92,8 @@ export function ForgotPasswordForm() {
       className="grid gap-4"
       onSubmit={form.handleSubmit(async (values) => {
         setError(null);
-        const result = await requestPasswordReset(locale, values);
+        const result = await requestPasswordReset(locale, values, captchaToken ?? undefined);
+        setCaptchaKey((k) => k + 1); // a CAPTCHA token is single use
         if (result.ok) setSent(true);
         else setError(result.code);
       })}
@@ -92,8 +101,9 @@ export function ForgotPasswordForm() {
       <Field id="fp-email" label={t('auth.email')} required error={fieldError(form.formState.errors.email?.message)}>
         <Input type="email" autoComplete="email" dir="ltr" className="text-start" {...form.register('email')} />
       </Field>
+      <Captcha onToken={setCaptchaToken} resetKey={captchaKey} />
       {error ? <InlineAlert tone="danger">{t(`errors.${error}`)}</InlineAlert> : null}
-      <Button type="submit" variant="primary" size="lg" loading={form.formState.isSubmitting}>
+      <Button type="submit" variant="primary" size="lg" loading={form.formState.isSubmitting} disabled={captchaEnabled() && !captchaToken}>
         {t('password.sendLink')}
       </Button>
     </form>

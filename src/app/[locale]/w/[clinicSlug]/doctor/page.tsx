@@ -10,6 +10,11 @@ import { AppointmentRowActions } from '@/modules/appointments/ui/row-actions';
 import { AppointmentStatusBadge } from '@/modules/appointments/ui/status-badge';
 import { localizedName } from '@/modules/catalog/names';
 import { loadCatalog } from '@/modules/catalog/queries';
+import { loadDayQueue, loadDurationSpreads } from '@/modules/reception/queries';
+import { waitingOrder } from '@/modules/reception/queue';
+import { QueueConsole, type ConsoleEntry } from '@/modules/reception/ui/queue-console';
+import { AutoRefresh } from '@/modules/reception/ui/queue-controls';
+import { QueueLive } from '@/modules/reception/ui/queue-live';
 import { can, loadWorkspace } from '@/modules/tenancy/workspace';
 import { cn } from '@/shared/lib/cn';
 import { formatLocalDay, formatNumber, formatTime } from '@/shared/lib/format';
@@ -61,9 +66,12 @@ export default async function DoctorPage({
     );
   }
 
-  const [appointments, grace] = await Promise.all([
+  const isToday = day === todayLocal;
+  const [appointments, grace, queue, spreads] = await Promise.all([
     loadDayAppointments({ clinicId: ws.clinic.id, day, timeZone: tz, doctorIds: myDoctorIds }),
     loadCheckinGrace(ws.clinic.id),
+    isToday && can(ws, 'queue.view') ? loadDayQueue(ws.clinic.id, day) : Promise.resolve(null),
+    isToday && can(ws, 'queue.view') ? loadDurationSpreads(ws.clinic.id) : Promise.resolve(new Map<string, number>()),
   ]);
   if (appointments.status !== 'ok') return (<>{header}<LoadFailure outcome={appointments} /></>);
 
@@ -73,6 +81,40 @@ export default async function DoctorPage({
   const remaining = rows.filter((a) => (ACTIVE_STATUSES as readonly string[]).includes(a.status) && new Date(a.endsAt) > now);
   const nextUp = day === todayLocal ? remaining[0] : undefined;
   const canAct = can(ws, 'appointments.cancel') && ws.clinic.status !== 'suspended';
+  const writable = ws.clinic.status !== 'suspended';
+  const abilities = {
+    manage: writable && can(ws, 'queue.manage_session'),
+    call: writable && can(ws, 'queue.call'),
+    start: writable && can(ws, 'queue.start'),
+    complete: writable && can(ws, 'queue.complete'),
+    correct: writable && can(ws, 'appointments.correct_status'),
+    prioritize: writable && can(ws, 'queue.prioritize'),
+  };
+  const byId = new Map(rows.map((a) => [a.id, a]));
+  const consoles = queue?.status === 'ok'
+    ? myDoctorIds.map((doctorId) => {
+        const own = queue.data.entries.filter((e) => e.doctorId === doctorId);
+        const ordered = [...own.filter((e) => e.state === 'in_consultation'), ...waitingOrder(own)];
+        const entries: ConsoleEntry[] = ordered.map((e) => {
+          const a = byId.get(e.appointmentId);
+          return {
+            id: e.id,
+            appointmentId: e.appointmentId,
+            ticket: e.ticketNumber,
+            state: e.state,
+            priority: e.priorityLevel === 1,
+            patientName: a?.patient ? `${a.patient.firstName} ${a.patient.lastName}` : t('reception.hiddenPatient'),
+            serviceName: a ? (services.get(a.serviceId) ?? '—') : '—',
+            checkedInAt: e.checkedInAt,
+            calledAt: e.calledAt,
+            consultationStartedAt: e.consultationStartedAt,
+            estimatedStartAt: e.estimatedStartAt,
+            spreadMinutes: a ? (spreads.get(`${e.doctorId}:${a.serviceId}`) ?? 0) : 0,
+          };
+        });
+        return { doctorId, session: queue.data.sessions.find((x) => x.doctorId === doctorId) ?? null, entries };
+      })
+    : [];
 
   return (
     <>
@@ -86,6 +128,15 @@ export default async function DoctorPage({
           { id: 'absent', label: t('doctor.absent'), value: formatNumber(locale, rows.filter((a) => a.status === 'no_show').length) },
         ]}
       />
+
+      {isToday ? <AutoRefresh seconds={60} /> : null}
+      {isToday && queue ? <QueueLive clinicSlug={ws.clinic.slug} doctorIds={myDoctorIds} /> : null}
+      {queue && queue.status !== 'ok' ? <LoadFailure outcome={queue} /> : null}
+      {consoles.map((c) => (
+        <div key={c.doctorId} className="mb-6">
+          <QueueConsole doctorId={c.doctorId} session={c.session} entries={c.entries} timeZone={tz} nowIso={now.toISOString()} abilities={abilities} />
+        </div>
+      ))}
 
       {day === todayLocal ? (
         <Section id="next" title={t('doctor.nextTitle')}>

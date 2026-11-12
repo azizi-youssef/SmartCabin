@@ -140,12 +140,14 @@ The service-role key bypasses RLS, so each use is listed here and reviewed.
 
 | Path | Why the privilege | Required safeguards |
 | --- | --- | --- |
-| `/api/internal/jobs/*` (dispatch, planning) | Processes events for every clinic | HMAC-verified caller. Each item filtered by its `clinic_id`. Bounded batches. `actor_type = system` |
+| `/api/internal/jobs/*` (dispatch, planning) | Processes events for every clinic | **Implemented without the service role (module 9):** the route verifies the HMAC signature, then calls `jobs_plan_notifications()`, `jobs_claim_notifications()` and `jobs_record_attempt()` as `anon`. Each of these definer functions first checks the job key against its SHA-256 in `private.job_credentials`, and does only its own narrow work (bounded batches, leases, its clinic's rows). No other function is reachable with the key, and no table is readable |
 | `/api/webhooks/<provider>` | Delivery receipts | Provider signature verified. Lookup by `provider_message_id` only. Idempotent |
 | Platform module infrastructure | Clinic approval, subscriptions | Prefer `platform_*` definer functions called with the user's JWT (aal2). Service role only where the Auth admin APIs require it |
 | Migrations and seeds | Schema changes | CI only, after review |
 
 ESLint restricts imports of the privileged client to these folders, and a CI test searches for the service-role variable everywhere else.
+
+**Deviation recorded (module 9):** the job path was planned with the service role. It uses a job key instead, so a leaked worker secret exposes only the three job functions (send due messages), not every table. The security metadata tests require each `jobs_*` function to call `private.require_job_key(p_job_key)`, and keep the list of functions `anon` may execute closed.
 
 ---
 
@@ -169,6 +171,16 @@ ESLint restricts imports of the privileged client to these folders, and a CI tes
 | Patient account overreach | A shared family phone sees other people's records | Only explicitly linked records (BR-D-02), minimal portal fields, no automatic phone matching |
 | Platform admin browsing | A super admin lists patients | No grant or policy for platform principals on patient-level tables. Aggregate functions only |
 | Leaked service-role key | Key committed or exposed client-side | Server-only module, ESLint rule, environment schema that rejects `NEXT_PUBLIC_` secrets, gitleaks in CI, rotation procedure |
+| SMS pumping (SC-AUD-01) | A script requests SMS codes for thousands of numbers, including premium-rate ranges, through the app or directly through Supabase Auth with the public key | Supabase Auth: phone sign-ups go through the before-user-created hook (`public.before_user_created`, migration 0030), which accepts Moroccan mobile numbers only; Turnstile CAPTCHA; at most one SMS per number per minute and 30 per hour. Abuse is therefore capped at about 30 SMS an hour to Moroccan mobiles. App: the same number rule; portal sign-in never creates an account (`shouldCreateUser: false`) and answers the same for known and unknown numbers; only online booking creates one. `src/shared/lib/auth-config.test.ts` keeps `config.toml` from being loosened |
+
+**Hosted project checklist (SC-AUD-01)**, since `config.toml` applies only to the local stack. In the Supabase dashboard, under Authentication:
+- **Bot and abuse protection:** CAPTCHA enabled, provider Turnstile, with the secret of a widget restricted to the app's domain. The site key goes in `NEXT_PUBLIC_TURNSTILE_SITE_KEY`.
+- **Providers → Phone:** new sign-ups enabled **only together with the hook**.
+- **Auth Hooks → Before User Created:** Postgres function `public.before_user_created` (migration 0030). Without the hook, any number could create an account and receive SMS.
+- **Rate limits:** SMS at most 30 per hour, and at least 60 seconds between two codes for a number.
+- **Before connecting an SMS provider:** restrict its allowed destination countries to Morocco.
+
+Turnstile is a Cloudflare service: it processes the visitor's IP address and browser signals. Declare it as a processor in the CNDP file before go-live.
 
 ---
 

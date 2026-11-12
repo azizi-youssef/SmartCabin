@@ -213,11 +213,13 @@ token_verifications = 30
 # Number of Web3 logins that can be made in a 5 minute interval per IP address.
 web3 = 30
 
-# Configure one of the supported captcha providers: `hcaptcha`, `turnstile`.
-# [auth.captcha]
-# enabled = true
-# provider = "hcaptcha"
-# secret = ""
+# SC-AUD-01: CAPTCHA on sign-up, password sign-in, OTP and password reset (Cloudflare Turnstile).
+# The secret comes from the environment; the app shows the widget with NEXT_PUBLIC_TURNSTILE_SITE_KEY.
+# For local development, Cloudflare's documented test keys always pass (see .env.example).
+[auth.captcha]
+enabled = true
+provider = "turnstile"
+secret = "env(SUPABASE_AUTH_CAPTCHA_SECRET)"
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.
@@ -259,13 +261,17 @@ otp_expiry = 3600
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
-enable_signup = false
+# S7 (online booking): patients create their account by SMS while booking. SC-AUD-01 controls:
+# the before-user-created hook below accepts Moroccan mobile numbers only, CAPTCHA is required,
+# and SMS are rate limited (one per number per minute, 30 per hour).
+enable_signup = true
 # If enabled, users need to confirm their phone number before signing in.
 enable_confirmations = false
 # Template for sending OTP to users
 template = "Your code is {{ .Code }}"
 # Controls the minimum amount of time that must pass before sending another sms otp.
-max_frequency = "5s"
+# SC-AUD-01: at most one code per number per minute.
+max_frequency = "60s"
 
 # Use pre-defined map of phone number to OTP for testing.
 # Keys are the phone number with country code and without the + prefix.
@@ -280,9 +286,10 @@ max_frequency = "5s"
 # inactivity_timeout = "8h"
 
 # This hook runs before a new user is created and allows developers to reject the request based on the incoming user object.
-# [auth.hook.before_user_created]
-# enabled = true
-# uri = "pg-functions://postgres/auth/before-user-created-hook"
+# SC-AUD-01 / S7: public.before_user_created (migration 0030) rejects phone sign-ups outside +212 6/7.
+[auth.hook.before_user_created]
+enabled = true
+uri = "pg-functions://postgres/public/before_user_created"
 
 # This hook runs before a token is issued and allows you to add additional claims based on the authentication method used.
 # [auth.hook.custom_access_token]

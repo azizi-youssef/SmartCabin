@@ -59,13 +59,12 @@ describe('revoke_invitation', () => {
 
 describe('suspension versus invitations', () => {
   /**
-   * AUDIT FINDING SC-AUD-03 (MEDIUM) — expected to fail until corrected.
-   * Admins may not manage owners or admins (set_member_status, change_member_role). But an
-   * admin can invite the e-mail of a SUSPENDED admin as a receptionist; on acceptance,
-   * accept_invitation's ON CONFLICT reactivates the membership with the new role.
-   * Remove `.fails` once invite_member/accept_invitation refuse suspended memberships.
+   * AUDIT FINDING SC-AUD-03 (MEDIUM), fixed by migration 0031.
+   * Admins may not manage owners or admins (set_member_status, change_member_role). An admin used
+   * to be able to invite the e-mail of a SUSPENDED admin as a receptionist: on acceptance,
+   * accept_invitation's ON CONFLICT reactivated the membership with the new role.
    */
-  it.fails('does not let an admin lift a suspension of an admin through a new invitation', async () => {
+  it('does not let an admin lift a suspension of an admin through a new invitation', async () => {
     await scenario(async (db, w) => {
       await actAs(db, asPostgres);
       const suspendedAdmin = await createUser(db);
@@ -79,7 +78,9 @@ describe('suspension versus invitations', () => {
         'select id from public.clinic_members where clinic_id = $1 and user_id = $2', [w.clinicA, suspendedAdmin]);
       expect((await failure(db, `select public.set_member_status($1, 'active')`, [member.id])).message).toBe('FORBIDDEN');
 
-      // The invitation path must be refused too (at invitation or at acceptance).
+      // The invitation path is refused too, at invitation already.
+      expect((await failure(db, "select * from public.invite_member($1, $2, 'receptionist')", [w.clinicA, `${suspendedAdmin}@example.test`])).message)
+        .toBe('MEMBER_SUSPENDED');
       let refused = false;
       try {
         await db.query('savepoint inv');
@@ -96,6 +97,33 @@ describe('suspension versus invitations', () => {
         'select role, status from public.clinic_members where clinic_id = $1 and user_id = $2', [w.clinicA, suspendedAdmin]);
       expect(refused).toBe(true);
       expect(after).toEqual({ role: 'clinic_admin', status: 'suspended' });
+    });
+  });
+
+  it('refuses at acceptance a suspension decided after the invitation, and still lets a removed member come back', async () => {
+    await scenario(async (db, w) => {
+      await actAs(db, asPostgres);
+      const [late, back] = [await createUser(db), await createUser(db)];
+      await db.query(
+        `insert into public.clinic_members (clinic_id, user_id, role, status) values ($1, $2, 'receptionist', 'removed'), ($1, $3, 'receptionist', 'removed')`,
+        [w.clinicA, late, back]);
+
+      await actAs(db, asUser(w.users.ownerA));
+      const lateInvite = await invite(db, w.clinicA, `${late}@example.test`, 'receptionist');
+      const backInvite = await invite(db, w.clinicA, `${back}@example.test`, 'receptionist');
+
+      // Between the invitation and its acceptance, the owner suspends the person.
+      await actAs(db, asPostgres);
+      await db.query("update public.clinic_members set status = 'suspended' where clinic_id = $1 and user_id = $2", [w.clinicA, late]);
+      await actAs(db, asUser(late));
+      expect((await failure(db, 'select public.accept_invitation($1)', [lateInvite.token])).message).toBe('MEMBER_SUSPENDED');
+
+      await actAs(db, asUser(back));
+      await db.query('select public.accept_invitation($1)', [backInvite.token]);
+      await actAs(db, asPostgres);
+      expect((await db.query<{ user_id: string; status: string }>(
+        'select user_id, status::text from public.clinic_members where clinic_id = $1 and user_id = any($2::uuid[]) order by status',
+        [w.clinicA, [late, back]])).rows).toEqual([{ user_id: back, status: 'active' }, { user_id: late, status: 'suspended' }]);
     });
   });
 });

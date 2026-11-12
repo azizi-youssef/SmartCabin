@@ -32,15 +32,21 @@ export default async function WorkspaceLayout({ children, params }: { children: 
   const operations: NavGroup = { label: t('nav.operations'), items: [{ href: base, label: t('nav.dashboard'), icon: 'dashboard', exact: true }] };
   if (can(ws, 'appointments.book')) operations.items.push({ href: `${base}/reception`, label: t('nav.reception'), icon: 'reception' });
   if (ws.isPractitioner) operations.items.push({ href: `${base}/doctor`, label: t('nav.doctor'), icon: 'doctor' });
+  if (can(ws, 'analytics.operational')) operations.items.push({ href: `${base}/analytics`, label: t('nav.analytics'), icon: 'analytics' });
   const groups: NavGroup[] = [operations];
+  const financeItems: NavGroup['items'] = [];
+  if (can(ws, 'invoices.view')) financeItems.push({ href: `${base}/billing`, label: t('nav.billing'), icon: 'billing' });
+  if (can(ws, 'billing.reports')) financeItems.push({ href: `${base}/revenue`, label: t('nav.revenue'), icon: 'revenue' });
   if (can(ws, 'patients.view')) {
     groups.push({ label: t('nav.records'), items: [{ href: `${base}/patients`, label: t('nav.patients'), icon: 'patients' }] });
   }
+  if (financeItems.length > 0) groups.push({ label: t('nav.finance'), items: financeItems });
   const clinicItems: NavGroup['items'] = [];
   if (can(ws, 'doctors.manage')) clinicItems.push({ href: `${base}/doctors`, label: t('nav.doctors'), icon: 'doctor' });
   if (can(ws, 'services.manage')) clinicItems.push({ href: `${base}/services`, label: t('nav.services'), icon: 'services' });
   if (can(ws, 'schedules.view')) clinicItems.push({ href: `${base}/schedules`, label: t('nav.schedules'), icon: 'schedules' });
   if (can(ws, 'members.view')) clinicItems.push({ href: `${base}/team`, label: t('nav.team'), icon: 'team' });
+  if (can(ws, 'subscription.view')) clinicItems.push({ href: `${base}/subscription`, label: t('nav.subscription'), icon: 'subscription' });
   if (can(ws, 'clinic.settings.update') || can(ws, 'clinic.profile.update') || can(ws, 'clinic.closures.manage')) {
     clinicItems.push({ href: `${base}/settings`, label: t('nav.settings'), icon: 'settings' });
   }
@@ -59,6 +65,10 @@ export default async function WorkspaceLayout({ children, params }: { children: 
     ) : ws.clinic.status === 'suspended' ? (
       <InlineAlert tone="danger" className="rounded-none border-x-0 border-t-0 px-4 sm:px-6">
         {t('shell.suspended')}
+      </InlineAlert>
+    ) : ws.readOnlyReason === 'subscription_expired' ? (
+      <InlineAlert tone="danger" className="rounded-none border-x-0 border-t-0 px-4 sm:px-6">
+        {t('shell.subscriptionExpired')}
       </InlineAlert>
     ) : null;
 
