@@ -40,4 +40,20 @@ describe('Supabase Auth settings (SC-AUD-01)', () => {
     expect(Number.parseInt(sms['max_frequency'] ?? '0', 10)).toBeGreaterThanOrEqual(60);
     expect(Number(section(toml, 'auth.rate_limit')['sms_sent'])).toBeLessThanOrEqual(30);
   });
+
+  it('lists only the one local test number for fixed SMS codes', () => {
+    // A fixed code bypasses the SMS itself: tolerated for the local stack's documented test
+    // number only (the hosted project must have none, SECURITY_MODEL §7).
+    const lines = toml.split(/\r?\n/);
+    const start = lines.findIndex((l) => l.trim() === '[auth.sms.test_otp]');
+    const entries: string[] = [];
+    if (start >= 0) {
+      for (const line of lines.slice(start + 1)) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('[')) break;
+        if (trimmed && !trimmed.startsWith('#')) entries.push(trimmed.split('=')[0]!.trim());
+      }
+    }
+    expect(entries).toEqual(['212600000001']);
+  });
 });
