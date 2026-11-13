@@ -5,6 +5,8 @@ allowBuilds:
   # Embedded PostgreSQL binaries for database tests without Docker. Reviewed: the postinstall
   # only re-creates local symlinks listed in native/pg-symlinks.json (no network access).
   '@embedded-postgres/windows-x64': true
+  # Same package for the Linux CI runner (GitHub Actions, ubuntu x64).
+  '@embedded-postgres/linux-x64': true
   # Pulled in by next-intl's message-extraction tooling (unused here); they ship
   # prebuilt platform binaries, so their install scripts are intentionally not run.
   '@parcel/watcher': false

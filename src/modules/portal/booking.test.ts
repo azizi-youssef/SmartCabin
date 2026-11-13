@@ -16,12 +16,14 @@ describe('online booking choices (S7)', () => {
   });
 
   it('groups slots by their local date in the clinic time zone, across midnight UTC', () => {
-    // 23:30 UTC on 2026-11-15 is 00:30 on 2026-11-16 in Casablanca (UTC+1).
-    const groups = slotsByDay(['2026-11-16T08:00:00.000Z', '2026-11-15T23:30:00.000Z', '2026-11-15T09:00:00.000Z'], 'Africa/Casablanca');
+    // Summer 2026 (Casablanca on UTC+1): 23:30 UTC on 2026-07-15 is 00:30 on 2026-07-16.
+    const groups = slotsByDay(['2026-07-16T08:00:00.000Z', '2026-07-15T23:30:00.000Z', '2026-07-15T09:00:00.000Z'], 'Africa/Casablanca');
     expect(groups).toEqual([
-      { day: '2026-11-15', slots: ['2026-11-15T09:00:00.000Z'] },
-      { day: '2026-11-16', slots: ['2026-11-15T23:30:00.000Z', '2026-11-16T08:00:00.000Z'] },
+      { day: '2026-07-15', slots: ['2026-07-15T09:00:00.000Z'] },
+      { day: '2026-07-16', slots: ['2026-07-15T23:30:00.000Z', '2026-07-16T08:00:00.000Z'] },
     ]);
+    // Since 20 September 2026 (UTC+0, SC-AUD-24) the local date is the UTC date.
+    expect(slotsByDay(['2026-11-15T23:30:00.000Z'], 'Africa/Casablanca')).toEqual([{ day: '2026-11-15', slots: ['2026-11-15T23:30:00.000Z'] }]);
     expect(addDays('2026-12-30', 3)).toBe('2027-01-02');
   });
 

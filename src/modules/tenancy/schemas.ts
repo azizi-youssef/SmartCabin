@@ -33,6 +33,8 @@ const int = (min: number, max: number) => z.coerce.number().int('integer').min(m
 export const bookingPolicySchema = z.object({
   onlineBookingEnabled: z.boolean(),
   autoConfirmOnline: z.boolean(),
+  /** BR-P-04: list the clinic's online-bookable doctors in the public directory (/medecins). */
+  listedInDirectory: z.boolean(),
   minLeadMinutes: int(0, 10080),
   maxHorizonDays: int(1, 365),
   patientCancelCutoffHours: int(0, 168),

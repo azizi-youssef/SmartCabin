@@ -147,6 +147,7 @@ export function BookingPolicyForm({ slug, policy, disabled }: { slug: string; po
         <div className="grid gap-3">
           <Checkbox label={t('settings.policy.onlineBooking')} description={t('settings.policy.onlineBookingHint')} {...form.register('onlineBookingEnabled')} />
           <Checkbox label={t('settings.policy.autoConfirm')} description={t('settings.policy.autoConfirmHint')} {...form.register('autoConfirmOnline')} />
+          <Checkbox label={t('settings.policy.directory')} description={t('settings.policy.directoryHint')} {...form.register('listedInDirectory')} />
         </div>
         <FieldGrid className="lg:grid-cols-3">
           {number('minLeadMinutes', t('settings.policy.minLead'))}

@@ -5,6 +5,7 @@ import { runDispatch } from '@/modules/notifications/dispatch';
 import { verifyJobSignature } from '@/modules/notifications/hmac';
 import { providerFromEnv } from '@/modules/notifications/providers';
 import { publicEnv } from '@/shared/lib/env';
+import { reportError } from '@/shared/lib/report-error';
 
 /**
  * Notification worker (module 9), called every minute by pg_cron + pg_net (or any scheduler)
@@ -47,8 +48,9 @@ export async function POST(request: NextRequest) {
       provider: providerFromEnv(),
     });
     return NextResponse.json(summary, { headers: HEADERS });
-  } catch {
-    // Counts only, no detail: a failed run is retried by the next call.
+  } catch (error) {
+    // Counts only, no detail in the answer: a failed run is retried by the next call.
+    reportError('jobs/dispatch', 'UNAVAILABLE', error);
     return NextResponse.json({ error: 'UNAVAILABLE' }, { status: 503, headers: HEADERS });
   }
 }

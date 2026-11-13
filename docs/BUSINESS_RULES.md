@@ -97,8 +97,8 @@ These run inside `book_appointment` and `reschedule_appointment`, in one transac
 | ID | Rule |
 | --- | --- |
 | BR-TZ-01 | Instants are stored as `timestamptz` (UTC). Schedules are stored as local wall-clock time with the clinic's `timezone` |
-| BR-TZ-02 | A local date and time is converted to an instant **for that specific date** using the time-zone database, never with a fixed offset. This covers Morocco's UTC+1 / UTC+0 Ramadan switch |
-| BR-TZ-03 | A window that falls in a non-existent or repeated local hour at a switch is clipped to the valid instants. Property tests cover the switch dates |
+| BR-TZ-02 | A local date and time is converted to an instant **for that specific date** using the time-zone database, never with a fixed offset. Morocco switched between UTC+1 and UTC+0 around Ramadan until it moved to UTC+0 for good on 20 September 2026 (IANA tzdata 2026c): past appointments keep the offset of their date. The server runtime and the database must both carry tzdata 2026c or later (SC-AUD-24) |
+| BR-TZ-03 | A window that falls in a non-existent or repeated local hour at a switch is clipped to the valid instants. Property tests cover the switch dates of a zone that still changes (Europe/Madrid), since a clinic's time zone may be any IANA zone |
 | BR-TZ-04 | "Today" always means today in the clinic's time zone, never the server's or the browser's |
 
 ---
@@ -316,6 +316,7 @@ stateDiagram-v2
 | BR-P-01 | Expired subscription: the clinic becomes read-only (no new bookings, data still accessible and exportable). It is not suspended automatically: the platform decides |
 | BR-P-02 | A clinic in `pending_approval` can configure services, doctors and schedules but cannot take online bookings or send patient messages |
 | BR-P-03 | Closing a clinic starts the export-then-retention procedure. Purge happens only after the retention period (TBD, counsel) |
+| BR-P-04 | Public doctor directory (`/medecins`): a clinic appears only after its owner or administrator agrees (`clinic_settings.listed_in_directory`, off by default). Only active doctors open to online booking, with at least one online service, are listed, and only while the clinic takes online bookings (active, online booking on, subscription not expired). The directory shows the clinic's public profile data, the lowest online price and the next free online slot in the next 14 days; nothing about patients |
 
 ---
 

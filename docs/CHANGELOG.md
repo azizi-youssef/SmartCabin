@@ -4,6 +4,145 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Nothing has been releas
 
 ## [Unreleased]
 
+### Fixed — SC-AUD-24: clinic times one hour late on the server (2026-11-13)
+
+- **Cause:** Morocco has been on UTC+0 for good since 20 September 2026 (IANA tzdata 2026c). Node.js 22.15 (tzdata 2025a) still applied UTC+1, so every time the server formatted was one hour late, and staff-entered time off was stored one hour early. PostgreSQL and browsers were already right.
+- **Runtime:** Node.js 22.23.5 (LTS, tzdata 2026e) installed on the development machine from nodejs.org (SHA-256 checked). `engines.node` now requires a release carrying tzdata 2026c or later (`^22.23.3 || ^24.20.0 || >=26.6.0`).
+- **Guards:** `src/shared/lib/tzdata.ts` with its test (fails on stale data: Morocco offset, 15:00 shown and stored as 15:00, summer 2026 still UTC+1), and `src/instrumentation.ts`, which logs `SC-AUD-24` at server start on a stale runtime.
+- **Tests rewritten for the new rule:** the unit offset test now checks both 2026 offsets; the slot grouping test crosses midnight in summer 2026; the database time-change property test runs on Europe/Madrid (Morocco no longer changes time). The embedded test database still has the old Moroccan rules (its latest package predates tzdata 2026c); its tests stay self-consistent.
+- **Docs:** BR-TZ-02 and BR-TZ-03, the hosted checklist (runtime and database time zone checks, SECURITY_MODEL §7), audit §3 and §8.
+- **Verified:**
+  - 170 unit tests, 204 database tests, typecheck, lint and production build pass on Node 22.23.5;
+  - the guard test failed on Node 22.15 with the expected message;
+  - on the production build, the 15:00 test booking shows 15:00–15:30 in the staff appointment record (16:00–16:30 before);
+  - the directory's next slot matches the booking page;
+  - no `SC-AUD-24` line at server start.
+
+### Changed — Local stack: patient sign-in with a test SMS code (2026-11-12)
+
+- **`supabase/config.toml`:** one test number with a fixed code (`[auth.sms.test_otp]`), so online booking and "Mes rendez-vous" can be tried locally without an SMS provider. `auth-config.test.ts` refuses any other test number; the hosted checklist (SECURITY_MODEL §7) requires none.
+- **Local environment (git-ignored, documented in `.env.example`):** `supabase/.env.local` holds the Turnstile test secret and the overrides that switch phone login on with placeholder provider values; `.env.local` holds the Turnstile test site key. Committed configuration keeps every SMS provider off.
+- **Local stack restarted** (data kept, dump taken first): CAPTCHA, the before-user-created hook and phone login are now active on it.
+- **Verified live on the production build:**
+  - booking from the directory with the test number (CAPTCHA, SMS code, new person, "Demande envoyée");
+  - "Mes rendez-vous" with the tracker on "Demandé";
+  - receptionist sign-in with CAPTCHA, the request listed under "À traiter", confirmation from the appointment record;
+  - directly on Supabase Auth: no CAPTCHA → 400 `captcha_failed`; a French number → 403 from the hook, no account created.
+- **Tests:** 4 unit tests for the tracker (`src/modules/portal/progress.test.ts`).
+- **Found — SC-AUD-24 (HIGH, open):** Morocco has been on UTC+0 since 20 September 2026 (tzdata 2026c). The Node.js runtime on this machine (22.15, tzdata 2025a) still applies UTC+1, so every time rendered by the server is one hour late (the 15:00 booking shows 16:00), and doctor time off entered by staff is stored one hour early. PostgreSQL and the browser are correct; SMS texts are formatted by PostgreSQL. See QUALITY_SECURITY_AUDIT §4.
+
+### Added — Public doctor directory and appointment progress (2026-11-12)
+
+- **"Trouver un médecin" (`/medecins`, public):**
+  - the doctors of every SmartCabin clinic that agreed to be listed, grouped by specialty, with filters by specialty;
+  - each doctor shows the clinic and its address, the next free online slot in the next 14 days, the lowest online price and "Prendre rendez-vous";
+  - the button opens the clinic's booking page with that doctor already chosen (`/c/<clinic>?medecin=<id>`); changing the service there keeps the doctor when they offer it.
+- **Clinic consent (BR-P-04):** a new setting "Apparaître dans l'annuaire des médecins SmartCabin" (Paramètres → booking policy), off by default, for owners and administrators only (`clinic.settings.update`). Only doctors open to online booking appear, and only while online booking is open.
+- **"Mes rendez-vous":**
+  - each upcoming appointment shows its progress: Demandé → Confirmé → À l'accueil → En consultation → Terminé, with one sentence on what happens next;
+  - an appointment under way stays under "À venir" until the consultation ends;
+  - the page refreshes itself every minute while an appointment is within 12 hours or under way;
+  - a "Trouver un médecin" button.
+- **Database:** migration 0032 (`clinic_settings.listed_in_directory`, `public_list_directory_doctors()`). The next slot uses the booking page's own slot rules (lead time, horizon, time off, closures, existing bookings).
+- **Load:** the directory is read once a minute for all visitors (server cache with a session-less anonymous client), so anonymous traffic cannot multiply slot computations. The booking page still reads live slots.
+- **Seed:** both active demo clinics are listed.
+- **Tests:**
+  - database: 4 tests (consent and who may give it, data returned and nothing else, next slot equal to the booking page's first slot, removal when online booking stops, access with and without an account);
+  - the security metadata test adds the function to the closed list of functions `anon` may execute, and checks it touches no patient-level table;
+  - unit: grouping and ordering, specialty filter, today and tomorrow.
+- **Verified:**
+  - typecheck and lint clean;
+  - 163 unit and component tests;
+  - database 204 passed, no expected failure;
+  - production build passes;
+  - checked in the browser on the production build against the local Supabase stack (migration 0032 applied there with the user's go-ahead, the two active demo clinics listed): `/medecins` in French at desktop width and in Arabic (RTL) at 375 px with no horizontal scroll and no console error; the specialty filter (an unknown value falls back to all); "Prendre rendez-vous" opens the clinic page with that doctor and one of their services already chosen. Not checked in the browser: the settings box (owners and administrators need TOTP sign-in) and the progress tracker (patients sign in by SMS).
+
+### Changed — Clinic dashboard by role (UX and service, 2026-11-12)
+
+- **Header actions** by role: "Prendre un rendez-vous" (main action, hidden in a read-only clinic), "Dossiers patients", "Facturation".
+- **Today:**
+  - the existing strip, plus "Encaissé aujourd'hui" (net, with the day's invoiced amount) for roles that see revenue;
+  - each appointment time now opens the appointment record.
+  - The no-show hint now states the K4 definition used since module 11.
+- **"À traiter"**, most urgent first, each item a link:
+  - expired or past-due subscription, trial ending within 7 days;
+  - data-processing agreement to accept;
+  - online requests to confirm (the next 3 shown, with patient and doctor);
+  - appointments past their check-in grace and never checked in;
+  - invoices to collect, with the total due;
+  - invoice drafts;
+  - online booking switched off.
+  - Each fact is loaded only for roles allowed to see it. "Rien à traiter" when all is in order.
+- **"Files d'attente":** each doctor's day: status, waiting, in consultation, announced delay.
+- **"7 derniers jours":** appointments, completed consultations, no-show rate and occupancy, each against the 7 days before, with direction and good or bad news shown by icon, text and color together. "Pas de période précédente comparable" instead of an invented 0 %.
+- **Accountants** now get a finance view (collected today, net since the 1st of the month, invoices to collect, drafts) instead of a message saying billing was not available yet.
+- **Loading:** the page shows at once; each panel streams in behind a placeholder of the same shape.
+- **New code:** `src/modules/dashboard/` (`attention.ts` and `trend.ts`, which are pure and tested; `queries.ts`; `ui/panels.tsx`). The dashboard rules are added to UI_UX_GUIDELINES §5.6.
+- **Tests:** 7 unit tests (order and visibility of the items, trial countdown, count and rate changes, good or bad news). The contract test covers the new queries.
+- **Verified:**
+  - typecheck and lint clean;
+  - 159 unit and component tests;
+  - database 200 passed, no expected failure;
+  - production build passes;
+  - checked in the browser on the production build as the seeded receptionist, in French and Arabic (RTL), at desktop width and at 375 px: header actions, today's strip, "À traiter" and the queues render; no console error; no horizontal scroll. The owner, admin and accountant views need TOTP sign-in and were not checked in the browser.
+
+### Verified — first run on the local Supabase stack (2026-11-12)
+
+- **Migrations:** 0026 to 0031 were applied to the local stack (`supabase migration up --local`, after a `pg_dump` backup). The 31 migrations now run on the real Supabase PostgreSQL, not only on the test shim.
+  - Every existing clinic received its Pilote trial subscription.
+  - The account-creation hook is executable by Supabase Auth only.
+  - The stack has no pg_cron, so the scheduled jobs (message planning, expiry of pending bookings, subscription states) are skipped there, as designed.
+- **Through the real API (PostgREST):**
+  - `public_get_clinic_profile` answers the anonymous key with the clinic and its online offer;
+  - a direct anonymous read of `patients` is refused (`42501`).
+- **In the browser, on the development server:** the public booking page of "Cabinet Démo Al Amal" shows real free slots from the database, with no console error. The slots respect the 60-minute lead time, the closed Sunday, the lunch break and Saturday mornings.
+- **Not run yet:**
+  - signed-in screens (staff sign-in, session cookies, the search URL);
+  - the SMS and TOTP flows;
+  - anything needing CAPTCHA or the account hook, which take effect only after the stack restarts with `SUPABASE_AUTH_CAPTCHA_SECRET` set.
+
+### Security — MEDIUM audit findings SC-AUD-04, -05, -06, -07 and -09 fixed (2026-11-12)
+
+- **Errors are traced (SC-AUD-04):**
+  - every unexpected error ("INTERNAL", "UNAVAILABLE") writes one JSON line on the server, with the request id, the context and the error's code, and never personal data;
+  - every page request gets an id, shown on error screens as "Référence de l'incident" so support can find the log line;
+  - the job and display APIs report their failures too.
+- **Content-Security-Policy with a nonce, and HSTS (SC-AUD-05):**
+  - only scripts carrying the response's nonce (and what they load, such as the CAPTCHA) can run;
+  - no framing, no plugins, connections limited to the app, Supabase and Turnstile;
+  - HTTPS enforced for a year in production.
+  - **Every page now renders per request** (no prerendered HTML), since a nonce cannot be baked in at build time.
+- **Session cookies are HttpOnly (SC-AUD-06):** `SameSite=Lax`, and `Secure` in production; no page script can read them.
+- **Search terms stay out of URLs (SC-AUD-07):** patient and invoice searches are posted and kept in a 15-minute HttpOnly cookie per screen and clinic, with a "clear search" button.
+- **The development seed refuses real databases (SC-AUD-09):** `seed.sql` stops if it finds a non-test account or any existing clinic. Never run `supabase db reset --linked`.
+- **Tests:**
+  - 11 unit tests: the policy, nonces, request ids, cookie options, the log line and its masking, the reporter, the search cookies, and the proxy with next-intl and Supabase mocked;
+  - 2 database tests: the seed guard.
+- **Verified:**
+  - typecheck and lint clean;
+  - 152 unit and component tests;
+  - database 200 passed, no expected failure;
+  - production build passes;
+  - **on a production server (`next start`) in the browser:** CSP, HSTS and request-id headers present; pages hydrate in French and Arabic; no CSP violation; no inline script without a nonce; an incident reference shown on the page matched its server log line.
+- **Not verified:**
+  - the `Set-Cookie` attributes of a real sign-in;
+  - a search with live data;
+  - the CAPTCHA widget under the CSP (no site key in `.env.local`).
+- **Still open:** SC-AUD-10, the end-to-end run on a live backend. Docker and a local Supabase stack are now running on this machine, but its database stops at migration 0025.
+
+### Security — SC-AUD-03 fixed: suspensions can no longer be lifted by invitation (2026-11-12)
+
+- An admin could invite the e-mail of an admin suspended by the owner, with another role, and the acceptance reactivated the membership. Now:
+  - inviting a suspended member is refused with the new code `MEMBER_SUSPENDED` (fr/ar message: reactivate from the team page, if your role allows it);
+  - accepting an invitation reactivates only a removed membership, never a suspended one, including a suspension decided after the invitation was sent.
+- **Migration 0031** replaces `invite_member` and `accept_invitation` forward-only (bodies of migration 0011, changed only at these two points; signatures and grants kept).
+- **Tests:** the audit's expected-failure test now passes without its marker; a new test covers a suspension decided after the invitation and a removed member coming back.
+- **Verified:**
+  - typecheck and lint clean;
+  - 141 unit and component tests;
+  - **database 198 passed, no expected failure**;
+  - production build passes.
+
 ### Added — Slice S7: Patient portal, online booking (2026-11-12)
 
 - **Public booking page `/c/<clinic>`**, reached through the clinic's link, with no account needed to look:

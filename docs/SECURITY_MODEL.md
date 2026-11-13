@@ -55,7 +55,7 @@ flowchart TB
 
 | Database role | Who | Table access |
 | --- | --- | --- |
-| `anon` | Public booking pages | **No table grant.** Only the rate-limited `public_*` functions (clinic profile, bookable services and doctors, slots) |
+| `anon` | Public booking pages | **No table grant.** Only the rate-limited `public_*` functions (clinic profile, bookable services and doctors, slots, and the doctor directory of clinics that agreed to it, BR-P-04). The directory computes next slots for every listed doctor, so the app reads it once a minute for everyone (server cache, session-less client) instead of once per visitor |
 | `authenticated`: staff member | JWT of a user with an active membership | SELECT under RLS; DML on managed tables under RLS; EXECUTE on command functions |
 | `authenticated`: patient account | JWT of a phone-OTP user | **No access to tenant-table rows**, because the policies require a membership patients do not have. EXECUTE on `portal_*` functions only |
 | `authenticated`: platform admin | JWT + `platform_admins` row + `aal2` | No access to tenant rows through clinic policies. EXECUTE on `platform_*` functions only |
@@ -171,6 +171,8 @@ ESLint restricts imports of the privileged client to these folders, and a CI tes
 | Patient account overreach | A shared family phone sees other people's records | Only explicitly linked records (BR-D-02), minimal portal fields, no automatic phone matching |
 | Platform admin browsing | A super admin lists patients | No grant or policy for platform principals on patient-level tables. Aggregate functions only |
 | Leaked service-role key | Key committed or exposed client-side | Server-only module, ESLint rule, environment schema that rejects `NEXT_PUBLIC_` secrets, gitleaks in CI, rotation procedure |
+| Script injection (XSS) | A future dependency or rendering bug injects a script | React escaping; Content-Security-Policy with a per-response nonce and `'strict-dynamic'` (no inline script without the nonce, no `eval` in production, no plugins, no framing); session cookies are HttpOnly, so an injected script cannot read the tokens (SC-AUD-05, SC-AUD-06) |
+| Personal data in URLs and logs | A patient name typed in a search lands in browser history and the host's request logs | Searches are posted and kept in a short-lived HttpOnly cookie, never in the URL (SC-AUD-07); error log lines mask e-mails and long numbers and never carry request bodies (SC-AUD-04) |
 | SMS pumping (SC-AUD-01) | A script requests SMS codes for thousands of numbers, including premium-rate ranges, through the app or directly through Supabase Auth with the public key | Supabase Auth: phone sign-ups go through the before-user-created hook (`public.before_user_created`, migration 0030), which accepts Moroccan mobile numbers only; Turnstile CAPTCHA; at most one SMS per number per minute and 30 per hour. Abuse is therefore capped at about 30 SMS an hour to Moroccan mobiles. App: the same number rule; portal sign-in never creates an account (`shouldCreateUser: false`) and answers the same for known and unknown numbers; only online booking creates one. `src/shared/lib/auth-config.test.ts` keeps `config.toml` from being loosened |
 
 **Hosted project checklist (SC-AUD-01)**, since `config.toml` applies only to the local stack. In the Supabase dashboard, under Authentication:
@@ -179,6 +181,11 @@ ESLint restricts imports of the privileged client to these folders, and a CI tes
 - **Auth Hooks → Before User Created:** Postgres function `public.before_user_created` (migration 0030). Without the hook, any number could create an account and receive SMS.
 - **Rate limits:** SMS at most 30 per hour, and at least 60 seconds between two codes for a number.
 - **Before connecting an SMS provider:** restrict its allowed destination countries to Morocco.
+- **Phone → Test OTPs:** none. The local stack has one test number with a fixed code (`[auth.sms.test_otp]` in `config.toml`, guarded by `auth-config.test.ts`); a fixed code skips the SMS, so it must never reach the hosted project (never `supabase config push` this file).
+
+**Time zone data (SC-AUD-24), before go-live and after each runtime change:**
+- the app's Node.js is one of `engines.node` in `package.json` (tzdata 2026c or later); the server log has no `SC-AUD-24` line at start;
+- the hosted database answers `12:00` to `select ('2026-11-13 12:00Z'::timestamptz at time zone 'Africa/Casablanca')::time;` (Morocco on UTC+0). Slots and SMS texts are computed there.
 
 Turnstile is a Cloudflare service: it processes the visitor's IP address and browser signals. Declare it as a processor in the CNDP file before go-live.
 

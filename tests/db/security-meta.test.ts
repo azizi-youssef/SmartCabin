@@ -42,7 +42,7 @@ const JOB_FUNCTIONS = ['jobs_claim_notifications', 'jobs_plan_notifications', 'j
  * Public reads for the booking page (S7): callable by anon, they return a clinic's public profile
  * and free slot times. Their own source must not touch any patient-level or financial table.
  */
-const PUBLIC_READS = ['public_get_available_slots', 'public_get_clinic_profile'];
+const PUBLIC_READS = ['public_get_available_slots', 'public_get_clinic_profile', 'public_list_directory_doctors'];
 const PATIENT_LEVEL = ['public.patients', 'public.patient_', 'public.appointment_history', 'public.invoices', 'public.payments',
   'public.notifications', 'public.queue_entries'];
 

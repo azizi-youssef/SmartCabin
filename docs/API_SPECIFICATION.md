@@ -59,7 +59,7 @@ The same names are used for the PostgreSQL function and the TypeScript applicati
 | --- | --- |
 | Owns | `clinics`, `clinic_settings`, `clinic_closures`, `clinic_counters` |
 | Commands | `create_clinic`, `update_clinic_profile`, `update_clinic_settings`, `add_clinic_closure`, `remove_clinic_closure`, `request_clinic_closure`. Platform: `platform_approve_clinic`, `platform_reject_clinic`, `platform_suspend_clinic`, `platform_reactivate_clinic`, `platform_close_clinic` |
-| Queries | `get_clinic_by_slug` (workspace), `public_get_clinic_profile(slug)` (anon, implemented in S7: profile, online flag, policy and online offer only), `platform_list_clinics` |
+| Queries | `get_clinic_by_slug` (workspace), `public_get_clinic_profile(slug)` (anon, implemented in S7: profile, online flag, policy and online offer only), `public_list_directory_doctors()` (anon, BR-P-04: listed doctors by specialty, lowest online price, next free online slot; read through a 60-second server cache), `platform_list_clinics` |
 | Events emitted | `clinic.submitted`, `clinic.approved`, `clinic.suspended` |
 | Internal API | `private.next_counter_value(clinic_id, key)`, used by Patients and Billing |
 
@@ -197,6 +197,7 @@ The same names are used for the PostgreSQL function and the TypeScript applicati
 | `APPT_INVALID_TRANSITION` | Transition check | E.g. completing a cancelled appointment |
 | `QUEUE_BUSY` | BR-Q-03 | Another patient is already in consultation with this doctor |
 | `LAST_OWNER` | BR-M-04 | Removing or demoting the last owner |
+| `MEMBER_SUSPENDED` | SC-AUD-03 | Inviting, or accepting an invitation for, a member suspended in the clinic. Lifting a suspension goes through `set_member_status` |
 | `INVOICE_IMMUTABLE` | BR-F-02 | Editing an issued invoice |
 | `PAYMENT_EXCEEDS_BALANCE` | BR-F-04 | Overpayment |
 | `INVOICE_INVALID_TRANSITION` | BR-F-01/05/06 | Issuing twice, paying a draft or a void invoice, voiding with payments, reversing twice |

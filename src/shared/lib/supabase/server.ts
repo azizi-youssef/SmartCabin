@@ -4,6 +4,10 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 import { publicEnv } from '@/shared/lib/env';
+// Registers the server's reporter for unexpected errors (SC-AUD-04) wherever Supabase is used.
+import '@/shared/lib/report-error';
+
+import { sessionCookieOptions } from './cookie-options';
 
 /**
  * User-scoped Supabase client for Server Components and Server Actions.
@@ -15,6 +19,7 @@ export async function getSupabase() {
   if (!env) return null;
   const store = await cookies();
   return createServerClient(env.url, env.key, {
+    cookieOptions: sessionCookieOptions(),
     cookies: {
       getAll: () => store.getAll(),
       setAll: (list) => {

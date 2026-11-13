@@ -67,6 +67,17 @@ export function formatShortDate(locale: Locale, date: Date | string, timeZone: s
   }).format(new Date(date));
 }
 
+/** "ven. 13 nov." — weekday and day, for near dates where the year is obvious. */
+export function formatWeekdayDay(locale: Locale, date: Date | string, timeZone: string): string {
+  return new Intl.DateTimeFormat(intlLocale(locale), {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    timeZone,
+    numberingSystem: 'latn',
+  }).format(new Date(date));
+}
+
 export function formatDateTime(locale: Locale, date: Date | string, timeZone: string): string {
   return new Intl.DateTimeFormat(intlLocale(locale), {
     day: 'numeric',

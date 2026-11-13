@@ -1,6 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ArrowRight, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
@@ -24,6 +25,7 @@ export function SignInForm() {
   const [error, setError] = useState<ErrorCode | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaKey, setCaptchaKey] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
   const form = useForm<z.input<typeof signInSchema>>({ resolver: zodResolver(signInSchema), defaultValues: { email: '', password: '' } });
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -36,17 +38,57 @@ export function SignInForm() {
   });
 
   return (
-    <form noValidate onSubmit={onSubmit} className="grid gap-4">
+    <form noValidate onSubmit={onSubmit} className="grid gap-4.5">
       <Field id="email" label={t('auth.email')} required error={form.formState.errors.email ? t('errors.VALIDATION_FAILED') : undefined}>
-        <Input type="email" autoComplete="username" dir="ltr" className="text-start" {...form.register('email')} />
+        <div className="relative">
+          <Mail aria-hidden className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-ink-subtle" />
+          <Input
+            type="email"
+            autoComplete="username"
+            dir="ltr"
+            placeholder={locale === 'ar' ? 'doctor@example.test' : 'docteur@example.test'}
+            className="ps-9.5 text-start transition-all duration-200 focus:border-accent focus:ring-2 focus:ring-accent/20"
+            {...form.register('email')}
+          />
+        </div>
       </Field>
+
       <Field id="password" label={t('auth.password')} required error={form.formState.errors.password ? t('patients.form.errors.required') : undefined}>
-        <Input type="password" autoComplete="current-password" dir="ltr" className="text-start" {...form.register('password')} />
+        <div className="relative">
+          <Lock aria-hidden className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-ink-subtle" />
+          <Input
+            type={showPassword ? 'text' : 'password'}
+            autoComplete="current-password"
+            dir="ltr"
+            placeholder="••••••••••••"
+            className="pe-10 ps-9.5 text-start transition-all duration-200 focus:border-accent focus:ring-2 focus:ring-accent/20"
+            {...form.register('password')}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            aria-label={showPassword ? (locale === 'ar' ? 'إخفاء كلمة المرور' : 'Masquer le mot de passe') : (locale === 'ar' ? 'إظهار كلمة المرور' : 'Afficher le mot de passe')}
+            className="focus-ring absolute end-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-ink-subtle transition-colors hover:text-ink hover:bg-surface-sunken"
+          >
+            {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          </button>
+        </div>
       </Field>
+
       <Captcha onToken={setCaptchaToken} resetKey={captchaKey} />
+
       {error ? <InlineAlert tone="danger">{t(`errors.${error}`)}</InlineAlert> : null}
-      <Button type="submit" variant="primary" size="lg" loading={form.formState.isSubmitting} disabled={captchaEnabled() && !captchaToken}>
-        {t('auth.submit')}
+
+      <Button
+        type="submit"
+        variant="primary"
+        size="lg"
+        loading={form.formState.isSubmitting}
+        disabled={captchaEnabled() && !captchaToken}
+        className="group relative mt-1 h-11 w-full justify-center overflow-hidden font-medium shadow-sm transition-all duration-200 hover:shadow-md active:scale-[0.99]"
+      >
+        <span>{t('auth.submit')}</span>
+        <ArrowRight className="ms-2 size-4 transition-transform group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" />
       </Button>
     </form>
   );

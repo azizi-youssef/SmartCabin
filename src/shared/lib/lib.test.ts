@@ -29,12 +29,19 @@ describe('time (clinic-local calendar)', () => {
     }
   });
 
-  it('uses the offset of each date (no fixed offset), as Morocco changes offset during Ramadan', () => {
+  it('uses the offset of each date (no fixed offset): Morocco was UTC+1 until 20 September 2026, UTC+0 since', () => {
     const tz = 'Africa/Casablanca';
     const offsets = new Set<number>();
-    for (let d = 0; d < 730; d += 7) offsets.add(offsetMinutes(zonedInstant(addDays('2027-01-04', d), '12:00', tz), tz));
-    // Whatever tzdata says, every computed instant must match its own offset; UTC+1 must be present.
-    expect(offsets.has(60)).toBe(true);
+    for (let d = 0; d < 364; d += 7) {
+      const day = addDays('2026-01-05', d);
+      const instant = zonedInstant(day, '12:00', tz);
+      expect(localDay(instant, tz)).toBe(day);
+      offsets.add(offsetMinutes(instant, tz));
+    }
+    // 2026 had both offsets (tzdata 2026c and later; SC-AUD-24): each date must use its own.
+    expect([...offsets].sort((a, b) => a - b)).toEqual([0, 60]);
+    expect(offsetMinutes(zonedInstant('2026-07-01', '12:00', tz), tz)).toBe(60);
+    expect(offsetMinutes(zonedInstant('2026-11-13', '12:00', tz), tz)).toBe(0);
   });
 
   it('builds [start, end) ranges covering exactly one local day', () => {

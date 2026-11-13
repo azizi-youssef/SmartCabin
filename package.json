@@ -5,7 +5,7 @@
   "type": "module",
   "description": "SmartCabin — multi-tenant clinic management SaaS (Nador, Morocco)",
   "engines": {
-    "node": ">=22"
+    "node": "^22.23.3 || ^24.20.0 || >=26.6.0"
   },
   "packageManager": "pnpm@12.16.1",
   "scripts": {

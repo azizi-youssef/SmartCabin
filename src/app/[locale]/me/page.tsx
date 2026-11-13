@@ -1,4 +1,4 @@
-import { CalendarDays, Clock3, Stethoscope } from 'lucide-react';
+import { CalendarDays, Clock3, Search, Stethoscope } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
 
 import { Link, redirect } from '@/i18n/navigation';
@@ -6,6 +6,8 @@ import type { Locale } from '@/i18n/routing';
 import { AppointmentStatusBadge } from '@/modules/appointments/ui/status-badge';
 import { localizedName } from '@/modules/catalog/names';
 import { loadMyAppointments, loadMyQueueStatus, type PortalAppointment } from '@/modules/portal';
+import { isOngoing, needsLiveUpdates, progressIndex } from '@/modules/portal/progress';
+import { AppointmentProgress } from '@/modules/portal/ui/appointment-progress';
 import { CancelMyAppointment } from '@/modules/portal/ui/cancel-appointment';
 import { estimateRange } from '@/modules/reception/queue';
 import { AutoRefresh } from '@/modules/reception/ui/queue-controls';
@@ -27,6 +29,7 @@ export async function generateMetadata() {
 
 function AppointmentItem({ a, locale, t, now }: { a: PortalAppointment; locale: Locale; t: (key: string, values?: Record<string, string>) => string; now?: number }) {
   const canCancel = now !== undefined && a.cancelUntil !== null && new Date(a.cancelUntil).getTime() > now;
+  const step = now !== undefined ? progressIndex(a.status) : null;
   return (
     <li className="grid gap-2 px-4 py-3">
       <div className="flex items-start justify-between gap-3">
@@ -48,6 +51,15 @@ function AppointmentItem({ a, locale, t, now }: { a: PortalAppointment; locale: 
         </span>
       </p>
       <p className="text-small text-ink-muted">{a.relationship === 'self' ? t('forSelf') : t('forRelative', { name: a.patientFirstName })}</p>
+      {step !== null ? (
+        <AppointmentProgress
+          current={step}
+          label={t('progress.label')}
+          steps={{ requested: t('progress.requested'), confirmed: t('progress.confirmed'), arrived: t('progress.arrived'), withDoctor: t('progress.withDoctor'), done: t('progress.done') }}
+          states={{ done: t('progress.stateDone'), current: t('progress.stateCurrent'), todo: t('progress.stateTodo') }}
+          hint={t(`progress.hint.${a.status}`)}
+        />
+      ) : null}
       {now !== undefined ? (
         <div className="flex flex-wrap items-center gap-2">
           {canCancel ? (
@@ -79,8 +91,10 @@ export default async function PortalPage() {
   const identity = memberships.session.phone ? formatPhone(memberships.session.phone.startsWith('+') ? memberships.session.phone : `+${memberships.session.phone}`) : (memberships.session.email ?? '');
 
   const now = requestNow().getTime();
-  const upcoming = appointments.status === 'ok' ? appointments.data.filter((a) => new Date(a.endsAt).getTime() >= now) : [];
-  const past = appointments.status === 'ok' ? appointments.data.filter((a) => new Date(a.endsAt).getTime() < now).reverse() : [];
+  // An appointment under way stays in "upcoming" until the consultation ends, even past its end time.
+  const upcoming = appointments.status === 'ok' ? appointments.data.filter((a) => isOngoing(a, now)) : [];
+  const past = appointments.status === 'ok' ? appointments.data.filter((a) => !isOngoing(a, now)).reverse() : [];
+  const live = tickets.length === 0 && upcoming.some((a) => needsLiveUpdates(a, now));
   const bookingClinics = appointments.status === 'ok'
     ? [...new Map(appointments.data.map((a) => [a.clinicSlug, { slug: a.clinicSlug, name: a.clinicName }])).values()]
     : [];
@@ -136,6 +150,7 @@ export default async function PortalPage() {
             </Section>
           ) : null}
           <Section id="upcoming" title={t('portal.upcoming')}>
+            {live ? <AutoRefresh seconds={60} /> : null}
             {upcoming.length === 0 ? (
               <div className="rounded-lg border border-line bg-surface">
                 <EmptyState icon={CalendarDays} title={t('portal.empty')} description={t('portal.emptyHint')} />
@@ -159,21 +174,23 @@ export default async function PortalPage() {
           ) : null}
         </>
       )}
-      {bookingClinics.length > 0 ? (
-        <Section id="book" title={t('portal.bookAgain')}>
-          <ul className="grid gap-2">
-            {bookingClinics.map((c) => (
-              <li key={c.slug}>
-                <Button asChild variant="secondary" className="w-full justify-start">
-                  <Link href={`/c/${c.slug}`}>{t('portal.bookAt', { clinic: c.name })}</Link>
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      ) : (
-        <p className="text-small text-ink-muted">{t('portal.onlineBookingNote')}</p>
-      )}
+      <Section id="book" title={t('portal.bookAgain')}>
+        <ul className="grid gap-2">
+          <li>
+            <Button asChild variant="secondary" className="w-full justify-start">
+              <Link href="/medecins"><Search aria-hidden />{t('portal.findDoctor')}</Link>
+            </Button>
+          </li>
+          {bookingClinics.map((c) => (
+            <li key={c.slug}>
+              <Button asChild variant="secondary" className="w-full justify-start">
+                <Link href={`/c/${c.slug}`}>{t('portal.bookAt', { clinic: c.name })}</Link>
+              </Button>
+            </li>
+          ))}
+        </ul>
+        {bookingClinics.length === 0 ? <p className="text-small text-ink-muted">{t('portal.onlineBookingNote')}</p> : null}
+      </Section>
     </PortalFrame>
   );
 }

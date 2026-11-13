@@ -24,7 +24,8 @@
     "closeMenu": "Fermer le menu",
     "notProvided": "—",
     "estimate": "Estimation",
-    "save": "Enregistrer"
+    "save": "Enregistrer",
+    "clearSearch": "Effacer la recherche"
   },
   "nav": {
     "operations": "Activité",
@@ -118,7 +119,8 @@
     "forbiddenBody": "Votre rôle ne donne pas accès à cette page.",
     "notFoundTitle": "Page introuvable",
     "notFoundBody": "Cette adresse ne correspond à aucune page ou à aucune clinique de votre compte.",
-    "goHome": "Revenir à l'accueil"
+    "goHome": "Revenir à l'accueil",
+    "reference": "Référence de l'incident : {ref}"
   },
   "errors": {
     "VALIDATION_FAILED": "Certaines informations sont invalides. Vérifiez le formulaire.",
@@ -215,13 +217,83 @@
     "completed": "Terminés",
     "cancelled": "Annulés",
     "noShowRate": "Taux d'absence",
-    "noShowRateHint": "Absents / (terminés + absents)",
+    "noShowRateHint": "Absents / (terminés + absents + partis avant la consultation), hors sans rendez-vous",
     "scopeOwn": "Vos rendez-vous uniquement (rôle médecin).",
     "nextTitle": "Prochains rendez-vous",
     "nextEmpty": "Plus aucun rendez-vous prévu aujourd'hui.",
     "openReception": "Ouvrir l'accueil",
     "noAppointmentsAccess": "Les rendez-vous ne font pas partie de votre rôle.",
-    "noAppointmentsAccessHint": "Les modules de facturation arrivent dans une prochaine version."
+    "noAppointmentsAccessHint": "Votre tableau de bord affiche ce qui relève de votre rôle : ici, rien n'est à suivre aujourd'hui.",
+    "nextEmptyHint": "Les nouvelles réservations apparaîtront ici. Prenez un rendez-vous depuis l'accueil.",
+    "actions": {
+      "book": "Prendre un rendez-vous",
+      "patients": "Dossiers patients",
+      "billing": "Facturation"
+    },
+    "financeLabel": "Finances",
+    "collectedToday": "Encaissé aujourd'hui",
+    "invoicedToday": "facturé : {amount}",
+    "netMonth": "Net encaissé ce mois",
+    "panelUnavailable": "Données indisponibles pour le moment.",
+    "attention": {
+      "title": "À traiter",
+      "none": "Rien à traiter pour le moment.",
+      "partial": "Rien à signaler parmi les informations disponibles (certaines n'ont pas pu être chargées).",
+      "subscriptionExpired": {
+        "title": "Abonnement expiré",
+        "body": "L'espace est en lecture seule. Demandez une formule pour le réactiver."
+      },
+      "subscriptionPastDue": {
+        "title": "Paiement de l'abonnement en retard",
+        "body": "Réglez avant la fin du délai de grâce pour éviter la lecture seule."
+      },
+      "trialEnding": {
+        "title": "{days, plural, =0 {L'essai se termine aujourd'hui} one {L'essai se termine dans # jour} other {L'essai se termine dans # jours}}",
+        "body": "Choisissez une formule pour continuer sans interruption."
+      },
+      "dpaPending": {
+        "title": "Accord de traitement des données à accepter",
+        "body": "Requis avant d'accueillir de vrais patients (loi 09-08)."
+      },
+      "pendingRequests": {
+        "title": "{count, plural, one {# demande en ligne à confirmer} other {# demandes en ligne à confirmer}}",
+        "body": "Les créneaux restent réservés tant qu'elles ne sont ni confirmées ni annulées."
+      },
+      "unresolvedToday": {
+        "title": "{count, plural, one {# rendez-vous non pointé} other {# rendez-vous non pointés}}",
+        "body": "Arrivé, absent ou annulé : à régler depuis l'accueil."
+      },
+      "unpaidInvoices": {
+        "title": "{count, plural, one {# facture à encaisser} other {# factures à encaisser}}",
+        "body": "Reste à payer : {amount}."
+      },
+      "draftInvoices": {
+        "title": "{count, plural, one {# brouillon de facture} other {# brouillons de facture}}",
+        "body": "À compléter, puis émettre."
+      },
+      "onlineBookingOff": {
+        "title": "Réservation en ligne désactivée",
+        "body": "Activez-la dans les paramètres pour recevoir les demandes de vos patients."
+      }
+    },
+    "queue": {
+      "title": "Files d'attente",
+      "day": "Journée",
+      "waiting": "En attente",
+      "inConsultation": "En consultation",
+      "delay": "retard annoncé : {minutes} min",
+      "empty": "Aucune journée de consultation n'est encore ouverte aujourd'hui."
+    },
+    "week": {
+      "title": "7 derniers jours",
+      "details": "Statistiques",
+      "up": "{value} par rapport aux 7 jours précédents",
+      "down": "{value} par rapport aux 7 jours précédents",
+      "flat": "stable par rapport aux 7 jours précédents",
+      "points": "{value} pt",
+      "noBase": "pas de période précédente comparable",
+      "note": "Mêmes définitions que la page Statistiques ; « — » quand ce n'est pas mesurable."
+    }
   },
   "reception": {
     "title": "Accueil",
@@ -424,7 +496,7 @@
     "with": "avec {doctor}",
     "staffAccount": "Ce compte est un compte de personnel de clinique.",
     "goWorkspace": "Aller à l'espace clinique",
-    "onlineBookingNote": "Pour réserver en ligne, ouvrez le lien de réservation de votre cabinet.",
+    "onlineBookingNote": "Votre cabinet n'est pas dans l'annuaire ? Ouvrez le lien de réservation qu'il vous a donné.",
     "signedInWith": "Connecté avec le {phone}",
     "myTurn": "Votre passage aujourd'hui",
     "turnCalled": "C'est votre tour : présentez-vous.",
@@ -437,7 +509,26 @@
     "cancelled": "Rendez-vous annulé.",
     "cancelTooLate": "Pour annuler maintenant, appelez le cabinet.",
     "bookAgain": "Prendre un rendez-vous",
-    "bookAt": "Chez {clinic}"
+    "bookAt": "Chez {clinic}",
+    "findDoctor": "Trouver un médecin",
+    "progress": {
+      "label": "Avancement du rendez-vous",
+      "requested": "Demandé",
+      "confirmed": "Confirmé",
+      "arrived": "À l'accueil",
+      "withDoctor": "En consultation",
+      "done": "Terminé",
+      "stateDone": "fait",
+      "stateCurrent": "étape actuelle",
+      "stateTodo": "à venir",
+      "hint": {
+        "pending": "Le cabinet doit encore confirmer votre demande. Le créneau vous est réservé en attendant.",
+        "confirmed": "Rendez-vous confirmé. Présentez-vous à l'accueil un peu avant l'heure.",
+        "checked_in": "Votre arrivée est enregistrée. Le médecin vous appellera.",
+        "in_progress": "Consultation en cours.",
+        "completed": "Consultation terminée."
+      }
+    }
   },
   "platform": {
     "title": "Cliniques",
@@ -670,7 +761,9 @@
       "graceHint": "Délai avant de pouvoir marquer un patient absent.",
       "turnApproaching": "Alerte « votre tour approche » à (patients avant)",
       "sender": "Nom d'expéditeur SMS",
-      "senderHint": "Neutre, sans spécialité médicale (ex. CabinetAA)."
+      "senderHint": "Neutre, sans spécialité médicale (ex. CabinetAA).",
+      "directory": "Apparaître dans l'annuaire des médecins SmartCabin",
+      "directoryHint": "Vos médecins ouverts à la réservation en ligne sont listés sur la page publique « Trouver un médecin », par spécialité, avec le nom et l'adresse du cabinet, le tarif à partir de et le prochain créneau libre. Rien sur vos patients. Ne s'applique que si la réservation en ligne est active."
     },
     "closures": {
       "title": "Fermetures",
@@ -1433,5 +1526,25 @@
     "paymentNote": "Référence ou note",
     "markPaid": "Enregistrer le paiement",
     "paymentRecorded": "Paiement enregistré."
+  },
+  "directory": {
+    "title": "Trouver un médecin",
+    "eyebrow": "Annuaire SmartCabin",
+    "subtitle": "Les médecins des cabinets qui prennent rendez-vous en ligne avec SmartCabin, classés par spécialité. Choisissez un médecin pour voir ses créneaux libres et réserver.",
+    "filterLabel": "Spécialités",
+    "all": "Toutes",
+    "otherSpecialty": "Autres spécialités",
+    "count": "{count, plural, one {# médecin} other {# médecins}}",
+    "nextLabel": "Prochain créneau :",
+    "nextToday": "aujourd'hui à {time}",
+    "nextTomorrow": "demain à {time}",
+    "nextOn": "{date} à {time}",
+    "noSlot": "Pas de créneau en ligne dans les 14 prochains jours. Le cabinet peut vous proposer une date par téléphone.",
+    "priceFrom": "À partir de",
+    "book": "Prendre rendez-vous",
+    "seeClinic": "Voir le cabinet",
+    "emptyTitle": "Aucun médecin n'est encore listé",
+    "emptyBody": "Les cabinets choisissent d'apparaître dans l'annuaire. Si votre cabinet vous a donné un lien ou un QR code de réservation, utilisez-le.",
+    "note": "Seuls les cabinets qui l'ont choisi figurent ici. Les créneaux affichés sont mis à jour chaque minute et vérifiés au moment de la réservation. Aucune information médicale n'est demandée."
   }
 }

@@ -22,6 +22,25 @@
 --   portal user +99900000101      patient portal account linked to one Al Amal record
 
 -- ---------------------------------------------------------------------------
+-- SC-AUD-09: this seed creates accounts with a published password. It refuses to run anywhere but
+-- an empty local database: never with a real (non-synthetic) account, never on top of existing
+-- clinics. `supabase db reset --linked` (against a remote project) is forbidden: it would wipe it.
+-- ---------------------------------------------------------------------------
+do $$
+begin
+  if exists (select 1 from auth.users u
+             where coalesce(u.email, '') !~* '\.test$' and coalesce(u.phone, '') !~ '^\+?999') then
+    raise exception 'SEED_REFUSED: this database holds accounts that are not synthetic test accounts. '
+      'The development seed runs only on an empty local database (supabase db reset, never --linked).';
+  end if;
+  if exists (select 1 from public.clinics) then
+    raise exception 'SEED_REFUSED: this database already holds clinics. '
+      'The development seed runs only on an empty local database (supabase db reset, never --linked).';
+  end if;
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
 -- Account helper (pg_temp: disappears at the end of the seed session)
 -- ---------------------------------------------------------------------------
 create function pg_temp.seed_user(p_id uuid, p_email text, p_phone text, p_full_name text)
@@ -134,7 +153,7 @@ insert into public.doctor_services (clinic_id, doctor_id, service_id, duration_m
   ('bbbbbbbb-0000-4000-8000-000000000001', 'bbbbbbbb-d000-4000-8000-000000000001', 'bbbbbbbb-5e00-4000-8000-000000000002', null, null);
 
 -- Online booking can be enabled now that bookable services exist (BR-T-07 trigger).
-update public.clinic_settings set online_booking_enabled = true
+update public.clinic_settings set online_booking_enabled = true, listed_in_directory = true
 where clinic_id in ('aaaaaaaa-0000-4000-8000-000000000001', 'bbbbbbbb-0000-4000-8000-000000000001');
 
 -- ---------------------------------------------------------------------------
