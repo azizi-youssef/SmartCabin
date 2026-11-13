@@ -1,0 +1,81 @@
+# SmartCabin — continuous integration.
+# Every check the project already runs by hand (package.json scripts), on a clean checkout:
+# typecheck, lint, unit and component tests, database tests, production build.
+# No secret and no Supabase project: the database suite starts its own throw-away embedded
+# PostgreSQL 17 with a Supabase shim (tests/db/harness), so no Docker either.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck, lint, tests, build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      # Pinned: package.json "engines" requires time zone data 2026c or later (SC-AUD-24), and
+      # src/shared/lib/tzdata.test.ts fails on an older runtime. Same release as the development machine.
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22.23.5'
+          package-manager-cache: false
+
+      # pnpm at the exact version of package.json "packageManager" (pnpm@12.16.1), through Corepack.
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          pnpm --version
+          node -p "'node ' + process.versions.node + ', tz ' + process.versions.tz"
+
+      - name: Locate the pnpm store
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache the pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-${{ runner.os }}-
+
+      - name: Install dependencies (lockfile as is)
+        run: pnpm install --frozen-lockfile
+
+      # next-env.d.ts and .next/types are generated and git-ignored; without them TypeScript
+      # does not know static image imports or typed routes.
+      - name: Generate Next.js types
+        run: pnpm exec next typegen
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit and component tests
+        run: pnpm test
+
+      - name: Database tests (embedded PostgreSQL, no Docker)
+        run: pnpm test:db
+
+      - name: Production build
+        run: pnpm build
