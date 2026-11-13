@@ -188,6 +188,21 @@ Data loaders return `Loaded<T>` (`ok | unavailable | error`), and pages render e
 
 ---
 
+### 5.6 Dashboard
+
+The clinic dashboard (`/w/<clinic>`) is built by role, from records only:
+- **Header actions:** verbs for the role's daily work ("Prendre un rendez-vous", "Dossiers patients", "Facturation"). Only one is primary, and none appears in a read-only clinic.
+- **One `MetricStrip`** for today, plus today's collected money for roles that may see revenue.
+- **"À traiter":** one list of links, most urgent first (danger, then warning, then info). Each item has an icon, a title and the consequence in one line. With nothing to do, it says so; it never shows a count of 0.
+- **"Files d'attente":** each doctor's day: status badge, waiting count, ticket in consultation, announced delay.
+- **"7 derniers jours":** each value with its change against the 7 days before. An arrow plus a sentence carries the meaning, colored by good or bad news (more no-shows is bad), never by direction alone. Without a comparable period, it says so rather than showing 0 %.
+- **Loading:** each panel streams in on its own (`Suspense`), behind a placeholder of the same geometry, so a slow query never blocks the page.
+
+### 5.7 Doctor directory and appointment progress
+
+- **Directory (`/medecins`):** specialty filters as links (each with its count, the active one marked `aria-current`), then one section per specialty. Each doctor card shows the clinic and its address, the next free slot ("aujourd'hui", "demain" or the date, in the clinic's time zone), the lowest price and one action: "Prendre rendez-vous" (primary) when a slot exists, otherwise "Voir le cabinet". The action opens the clinic's booking page with that doctor already chosen.
+- **Progress tracker ("Mes rendez-vous"):** five steps (Demandé → Confirmé → À l'accueil → En consultation → Terminé) as an ordered list. A step's state is carried by its icon (check, dot, empty ring), its text weight and a screen-reader word, never by color alone; the current step has `aria-current="step"`. One sentence under it says what happens next. Cancelled and missed appointments show their status badge instead. The page refreshes itself every minute while an appointment is close or under way.
+
 ## 6. Localization and RTL
 
 - **Locales and routing:**
