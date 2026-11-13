@@ -65,6 +65,7 @@ export async function updateBookingPolicy(clinicSlug: string, input: BookingPoli
     .update({
       online_booking_enabled: v.onlineBookingEnabled,
       auto_confirm_online: v.autoConfirmOnline,
+      listed_in_directory: v.listedInDirectory,
       min_lead_minutes: v.minLeadMinutes,
       max_horizon_days: v.maxHorizonDays,
       patient_cancel_cutoff_hours: v.patientCancelCutoffHours,

@@ -40,14 +40,16 @@ function newKey(): string {
  * Online booking in four steps (USER_WORKFLOWS §1): slot, phone code, person, confirmation.
  * Slots come from the server; the booking re-checks every rule in one transaction.
  */
-export function BookingWizard({ clinic, today, signedIn }: { clinic: ClinicForBooking; today: string; signedIn: boolean }) {
+export function BookingWizard({ clinic, today, signedIn, initialDoctorId }: { clinic: ClinicForBooking; today: string; signedIn: boolean; initialDoctorId?: string }) {
   const t = useTranslations();
   const locale = useLocale() as Locale;
   const dir = directionOf(locale);
   const services = servicesOf(clinic.offerings);
-  const [serviceId, setServiceId] = useState(services[0]?.serviceId ?? '');
+  // A doctor chosen in the directory starts on their first service.
+  const preferred = initialDoctorId ? clinic.offerings.find((o) => o.doctorId === initialDoctorId) : undefined;
+  const [serviceId, setServiceId] = useState(preferred?.serviceId ?? services[0]?.serviceId ?? '');
   const doctors = doctorsFor(clinic.offerings, serviceId);
-  const [doctorId, setDoctorId] = useState(doctors[0]?.doctorId ?? '');
+  const [doctorId, setDoctorId] = useState(preferred?.doctorId ?? doctors[0]?.doctorId ?? '');
   const [weekStart, setWeekStart] = useState(today);
   const [slots, setSlots] = useState<string[] | null>(null);
   const [slot, setSlot] = useState<string | null>(null);
@@ -163,7 +165,9 @@ export function BookingWizard({ clinic, today, signedIn }: { clinic: ClinicForBo
         <Field id="booking-service" label={t('booking.service')}>
           <Select value={serviceId} onChange={(e) => {
             setServiceId(e.target.value);
-            setDoctorId(doctorsFor(clinic.offerings, e.target.value)[0]?.doctorId ?? '');
+            // Keep the chosen doctor when they also offer the new service.
+            const next = doctorsFor(clinic.offerings, e.target.value);
+            setDoctorId(next.find((d) => d.doctorId === doctorId)?.doctorId ?? next[0]?.doctorId ?? '');
             setError(null);
           }}>
             {services.map((s) => <option key={s.serviceId} value={s.serviceId}>{`${name(s.serviceNameFr, s.serviceNameAr)} (${t('booking.minutes', { minutes: s.durationMinutes })})`}</option>)}

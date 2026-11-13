@@ -26,8 +26,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
  * and the free slots; booking asks for an SMS code, which opens (or creates) the patient's
  * account. Only clinic profile data and slot times are public: nothing about patients.
  */
-export default async function ClinicBookingPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ClinicBookingPage({ params, searchParams }: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { slug } = await params;
+  // ?medecin=<id> (from the doctor directory) preselects that doctor when the clinic offers them.
+  const wanted = (await searchParams)['medecin'];
   const t = await getTranslations();
   if (!/^[a-z0-9][a-z0-9-]{1,80}$/.test(slug)) notFound();
   const [clinic, session] = await Promise.all([loadPublicClinic(slug), getSessionState()]);
@@ -38,6 +43,7 @@ export default async function ClinicBookingPage({ params }: { params: Promise<{ 
   }
   const c = clinic.data;
   const signedInWithPhone = session.status === 'signed_in' && Boolean(session.session.phone);
+  const initialDoctorId = typeof wanted === 'string' ? c.offerings.find((o) => o.doctorId === wanted)?.doctorId : undefined;
 
   return (
     <div className="min-h-dvh bg-canvas">
@@ -70,6 +76,7 @@ export default async function ClinicBookingPage({ params }: { params: Promise<{ 
             clinic={{ id: c.id, slug: c.slug, timezone: c.timezone, autoConfirm: c.autoConfirm, maxHorizonDays: c.maxHorizonDays, cancelCutoffHours: c.cancelCutoffHours, offerings: c.offerings }}
             today={today(c.timezone)}
             signedIn={signedInWithPhone}
+            initialDoctorId={initialDoctorId}
           />
         ) : (
           <div className="rounded-lg border border-line bg-surface">

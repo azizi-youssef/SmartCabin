@@ -139,6 +139,7 @@ export function loadClinicProfile(clinicId: string): Promise<Loaded<ClinicProfil
 export interface BookingPolicy {
   onlineBookingEnabled: boolean;
   autoConfirmOnline: boolean;
+  listedInDirectory: boolean;
   minLeadMinutes: number;
   maxHorizonDays: number;
   patientCancelCutoffHours: number;
@@ -156,7 +157,7 @@ export function loadBookingPolicy(clinicId: string): Promise<Loaded<BookingPolic
         s
           .from('clinic_settings')
           .select(
-            'online_booking_enabled, auto_confirm_online, min_lead_minutes, max_horizon_days, patient_cancel_cutoff_hours, ' +
+            'online_booking_enabled, auto_confirm_online, listed_in_directory, min_lead_minutes, max_horizon_days, patient_cancel_cutoff_hours, ' +
               'max_active_online_bookings, reminder_offsets_minutes, checkin_grace_minutes, turn_approaching_positions, sms_sender_name',
           )
           .eq('clinic_id', clinicId)
@@ -166,6 +167,7 @@ export function loadBookingPolicy(clinicId: string): Promise<Loaded<BookingPolic
       .object({
         online_booking_enabled: z.boolean(),
         auto_confirm_online: z.boolean(),
+        listed_in_directory: z.boolean(),
         min_lead_minutes: z.number().int(),
         max_horizon_days: z.number().int(),
         patient_cancel_cutoff_hours: z.number().int(),
@@ -181,6 +183,7 @@ export function loadBookingPolicy(clinicId: string): Promise<Loaded<BookingPolic
           ? {
               onlineBookingEnabled: r.online_booking_enabled,
               autoConfirmOnline: r.auto_confirm_online,
+              listedInDirectory: r.listed_in_directory,
               minLeadMinutes: r.min_lead_minutes,
               maxHorizonDays: r.max_horizon_days,
               patientCancelCutoffHours: r.patient_cancel_cutoff_hours,

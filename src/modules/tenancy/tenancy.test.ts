@@ -33,6 +33,7 @@ describe('clinic settings schemas', () => {
     const base = {
       onlineBookingEnabled: false,
       autoConfirmOnline: false,
+      listedInDirectory: false,
       minLeadMinutes: '60',
       maxHorizonDays: '60',
       patientCancelCutoffHours: '2',
