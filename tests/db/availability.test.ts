@@ -9,9 +9,12 @@ import { createWorld, localInstant, type World } from './helpers/fixtures';
 /**
  * Module 5 — services and availability (migration 0021):
  * save_doctor_schedule (atomic schedule + windows), list_doctor_booking_conflicts (BR-B-12),
- * and the slot generator across Morocco's Ramadan time change (BR-TZ-02, BR-TZ-03).
+ * and the slot generator across time changes (BR-TZ-02, BR-TZ-03).
  */
-const TZ = 'Africa/Casablanca';
+// Morocco has had no time change since it moved to UTC+0 for good on 2026-09-20 (tzdata 2026c,
+// SC-AUD-24), so the generator is exercised on a zone that still changes twice a year. A clinic's
+// time zone may be any IANA zone; Spain's rules are the same in every tzdata release in use.
+const TZ = 'Europe/Madrid';
 
 let pool: pg.Pool;
 beforeAll(() => {
@@ -202,7 +205,7 @@ describe('booking conflicts after availability changes (BR-B-12)', () => {
   });
 });
 
-describe('slot generator across the Ramadan time change (BR-TZ-02, BR-TZ-03)', () => {
+describe('slot generator across time changes (BR-TZ-02, BR-TZ-03)', () => {
   interface Slot {
     slot_starts_at: Date;
     slot_ends_at: Date;
@@ -216,6 +219,7 @@ describe('slot generator across the Ramadan time change (BR-TZ-02, BR-TZ-03)', (
   it('offers only real, exact, distinct slots inside their window on and around every time change', async () => {
     await scenario(async (db, w) => {
       await actAs(db, asPostgres);
+      await db.query('update public.clinics set timezone = $2 where id = $1', [w.clinicA, TZ]);
       // Days whose UTC offset at noon differs from the previous day's: the time changes.
       const switches = (await db.query<{ d: string }>(
         `with days as (
@@ -225,7 +229,7 @@ describe('slot generator across the Ramadan time change (BR-TZ-02, BR-TZ-03)', (
            from generate_series(14, 730) as i)
          select d::text as d from (select d, off, lag(off) over (order by d) as prev from days) x
          where prev is not null and off <> prev order by d`, [TZ])).rows.map((r) => r.d);
-      expect(switches.length, 'tzdata must know Morocco\'s Ramadan time changes').toBeGreaterThanOrEqual(2);
+      expect(switches.length, 'tzdata must know the spring and autumn time changes').toBeGreaterThanOrEqual(2);
 
       for (const day of switches) {
         // An override covering the change, every weekday: a night window around the switch hour,
