@@ -8,6 +8,8 @@ import { CreatePatientDialog } from '@/modules/patients/ui/create-patient-dialog
 import { can, loadWorkspace } from '@/modules/tenancy/workspace';
 import { formatLocalDay, formatShortDate } from '@/shared/lib/format';
 import { formatPhone } from '@/shared/lib/phone';
+import { submitSearch } from '@/shared/lib/search-actions';
+import { readSearchTerm } from '@/shared/lib/search-term';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 import { CellStack, DataTable, type Column } from '@/shared/ui/data-table';
@@ -22,15 +24,12 @@ export async function generateMetadata() {
   return { title: t('title') };
 }
 
-/** Patient records: server-side search, newest first by default, registration dialog. */
-export default async function PatientsPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ clinicSlug: string }>;
-  searchParams: Promise<{ q?: string }>;
-}) {
-  const [{ clinicSlug }, query] = await Promise.all([params, searchParams]);
+/**
+ * Patient records: server-side search, newest first by default, registration dialog.
+ * The search term is posted and kept in an HttpOnly cookie, never in the URL (SC-AUD-07).
+ */
+export default async function PatientsPage({ params }: { params: Promise<{ clinicSlug: string }> }) {
+  const { clinicSlug } = await params;
   const locale = (await getLocale()) as Locale;
   const t = await getTranslations();
   const result = await loadWorkspace(clinicSlug);
@@ -45,7 +44,7 @@ export default async function PatientsPage({
     );
   }
 
-  const q = sanitizeSearch(query.q ?? '');
+  const q = sanitizeSearch(await readSearchTerm('patients', ws.clinic.slug));
   const patients = await searchPatients({ clinicId: ws.clinic.id, query: q });
   const canCreate = can(ws, 'patients.create') && ws.clinic.status !== 'suspended';
 
@@ -98,7 +97,9 @@ export default async function PatientsPage({
         rows={rows}
         getRowId={(p) => p.id}
         toolbar={
-          <form role="search" className="flex w-full flex-wrap items-center gap-2" action="">
+          <form role="search" className="flex w-full flex-wrap items-center gap-2" action={submitSearch}>
+            <input type="hidden" name="scope" value="patients" />
+            <input type="hidden" name="clinic" value={ws.clinic.slug} />
             <label htmlFor="patient-search" className="sr-only">
               {t('patients.searchLabel')}
             </label>
@@ -109,6 +110,11 @@ export default async function PatientsPage({
             <Button type="submit" variant="secondary">
               {t('common.search')}
             </Button>
+            {q ? (
+              <Button type="submit" name="clear" value="1" variant="ghost">
+                {t('common.clearSearch')}
+              </Button>
+            ) : null}
             <span className="ms-auto text-small text-ink-muted">{q ? t('patients.results', { count: rows.length, query: q }) : t('patients.recent')}</span>
           </form>
         }

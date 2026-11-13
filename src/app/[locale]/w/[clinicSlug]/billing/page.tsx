@@ -10,6 +10,8 @@ import { InvoiceStatusBadge } from '@/modules/billing/ui/invoice-status-badge';
 import { can, loadWorkspace } from '@/modules/tenancy/workspace';
 import { cn } from '@/shared/lib/cn';
 import { formatMoney, formatShortDate } from '@/shared/lib/format';
+import { submitSearch } from '@/shared/lib/search-actions';
+import { readSearchTerm } from '@/shared/lib/search-term';
 import { Button } from '@/shared/ui/button';
 import { DataTable, type Column } from '@/shared/ui/data-table';
 import { Input } from '@/shared/ui/form-controls';
@@ -29,7 +31,7 @@ export default async function BillingPage({
   searchParams,
 }: {
   params: Promise<{ clinicSlug: string }>;
-  searchParams: Promise<{ status?: string; q?: string }>;
+  searchParams: Promise<{ status?: string }>;
 }) {
   const [{ clinicSlug }, query] = await Promise.all([params, searchParams]);
   const locale = (await getLocale()) as Locale;
@@ -46,7 +48,8 @@ export default async function BillingPage({
   }
 
   const filter: InvoiceFilter = (INVOICE_FILTERS as readonly string[]).includes(query.status ?? '') ? (query.status as InvoiceFilter) : 'all';
-  const q = sanitizeInvoiceSearch(query.q ?? '');
+  // Names typed in the search stay out of the URL (SC-AUD-07): posted, kept in an HttpOnly cookie.
+  const q = sanitizeInvoiceSearch(await readSearchTerm('invoices', ws.clinic.slug));
   const invoices = await loadInvoices({ clinicId: ws.clinic.id, filter, query: q });
   const base = `/w/${ws.clinic.slug}/billing`;
   const tz = ws.clinic.timezone;
@@ -120,14 +123,16 @@ export default async function BillingPage({
         rows={rows}
         getRowId={(i) => i.id}
         toolbar={
-          <form role="search" className="flex w-full flex-wrap items-center gap-2" action="">
-            {filter !== 'all' ? <input type="hidden" name="status" value={filter} /> : null}
+          <form role="search" className="flex w-full flex-wrap items-center gap-2" action={submitSearch}>
+            <input type="hidden" name="scope" value="invoices" />
+            <input type="hidden" name="clinic" value={ws.clinic.slug} />
             <label htmlFor="invoice-search" className="sr-only">{t('billing.searchLabel')}</label>
             <div className="relative min-w-0 flex-1 sm:max-w-md">
               <Search aria-hidden className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-ink-subtle" />
               <Input id="invoice-search" name="q" type="search" defaultValue={q} placeholder={t('billing.searchPlaceholder')} className="ps-9" />
             </div>
             <Button type="submit" variant="secondary">{t('common.search')}</Button>
+            {q ? <Button type="submit" name="clear" value="1" variant="ghost">{t('common.clearSearch')}</Button> : null}
           </form>
         }
         footer={hasMore ? <span>{t('billing.tooMany', { count: INVOICE_PAGE_SIZE })}</span> : undefined}

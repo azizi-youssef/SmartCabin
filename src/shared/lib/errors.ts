@@ -64,8 +64,26 @@ interface ErrorLike {
   name?: string | undefined;
 }
 
+type ErrorReporter = (code: ErrorCode, error: unknown) => void;
+let reporter: ErrorReporter | null = null;
+
+/**
+ * Registers the server's reporter for unexpected errors (SC-AUD-04): src/shared/lib/report-error.ts
+ * registers itself when loaded. This module stays importable from client components.
+ */
+export function setErrorReporter(fn: ErrorReporter | null): void {
+  reporter = fn;
+}
+
 /** Maps a PostgREST / Supabase / network error to a domain code. Never exposes raw messages. */
 export function toErrorCode(error: unknown): ErrorCode {
+  const code = mapError(error);
+  // Domain errors are expected answers; INTERNAL and UNAVAILABLE are incidents worth a trace.
+  if ((code === 'INTERNAL' || code === 'UNAVAILABLE') && reporter && typeof window === 'undefined') reporter(code, error);
+  return code;
+}
+
+function mapError(error: unknown): ErrorCode {
   if (!error || typeof error !== 'object') return 'INTERNAL';
   const e = error as ErrorLike;
   if (e.message && KNOWN.has(e.message)) return e.message as ErrorCode;

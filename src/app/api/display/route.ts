@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { publicEnv } from '@/shared/lib/env';
+import { reportError } from '@/shared/lib/report-error';
 
 /**
  * Waiting-room screen snapshot (module 8b). No login: the screen's token is the credential, sent
@@ -24,10 +25,12 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase.rpc('display_snapshot', { p_token: token });
     if (error) {
       const notFound = error.message === 'NOT_FOUND' || error.code === 'P0002';
+      if (!notFound) reportError('api/display', 'UNAVAILABLE', error);
       return NextResponse.json({ error: notFound ? 'NOT_FOUND' : 'UNAVAILABLE' }, { status: notFound ? 404 : 503, headers: HEADERS });
     }
     return NextResponse.json(data, { headers: HEADERS });
-  } catch {
+  } catch (error) {
+    reportError('api/display', 'UNAVAILABLE', error);
     return NextResponse.json({ error: 'UNAVAILABLE' }, { status: 503, headers: HEADERS });
   }
 }

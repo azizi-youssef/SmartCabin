@@ -6,6 +6,8 @@ import { signJob } from '@/modules/notifications/hmac';
 
 const rpc = vi.fn();
 vi.mock('@supabase/supabase-js', () => ({ createClient: () => ({ rpc }) }));
+const reportError = vi.fn();
+vi.mock('@/shared/lib/report-error', () => ({ reportError: (...args: unknown[]) => reportError(...args) }));
 
 const SECRET = 'route-secret-'.padEnd(48, 'r');
 
@@ -75,5 +77,7 @@ describe('POST /api/internal/jobs/dispatch', () => {
     const res = await POST(request('{}', signed()));
     expect(res.status).toBe(503);
     expect(await res.json()).toEqual({ error: 'UNAVAILABLE' });
+    // SC-AUD-04: the failure is traced on the server, not in the answer.
+    expect(reportError).toHaveBeenCalledWith('jobs/dispatch', 'UNAVAILABLE', expect.any(Error));
   });
 });
